@@ -21,11 +21,34 @@ const REFRESH_MS = 5 * 60 * 1000;
 const PREMIOS_DAN_PUNTO_EXTRA = false; // activar a futuro: +1 al equipo del ganador de cada premio individual
 const INDIVIDUAL_FLOOR = 100; // piso ficticio para quien no tiene promedio semestral
 
-// Promedio semanal semestral POR BROKER (para el Camion de Oro). No fue provisto
-// para esta version; todos usan el piso ficticio hasta que se cargue el dato real.
+// Promedio semanal semestral POR BROKER (para el Camion de Oro y la meta personal
+// semanal). Fuente: Mundial de Ventas - Promedios Ene-Jun 2026 (columna Semanal).
 // Llenar aqui: 'NOMBRE EN MAYUSCULAS': monto
 const INDIVIDUAL_AVG_SEMESTRAL = {
-  // 'SAUL ESCOBAR': 1200,
+  // Equipo 1 - Francia
+  'GABE MENDEZ': 1102.04,
+  'EDDUAR GUDIEL': 883.49,
+  'SAUL ESCOBAR': 593.23,
+  'JOSE RUANO': 99.08,
+  // Equipo 2 - Argentina
+  'MARY GAYTAN': 1228.90,
+  'ALEXIS GARCIA': 1228.73,
+  'EDVIN PAREDES': 1013.75,
+  'JOE AYALA': 392.33,
+  'MARV LINARES': 179.63,
+  // Equipo 3 - España
+  'GUS MENDEZ': 4424.73,
+  'OLIVER CENTENO': 1812.50,
+  'BRYAN GUERRA': 393.58,
+  'CHARLY MOLINA': 200.56,
+  'JUAN DIAZ': 181.88,
+  'PAUL BATS': 57.75,
+  // Equipo 4 - Noruega
+  'JOSE ROMERO': 1564.77,
+  'NERY MENDEZ': 1110.73,
+  'MARVIN GUARCHAJ': 938.92,
+  'JONATHAN SUAZO': 293.75,
+  'JAMES PENA': 291.58,
 };
 
 // Alias de nombres (variantes en el sheet -> nombre oficial en MAYUSCULAS)
@@ -940,7 +963,7 @@ function renderDebug(groupMatches, idx) {
     }).join('')}
     </tbody>
   </table>
-  <p class="note">Nota: los promedios semestrales individuales para el Camion de Oro no fueron provistos; todos los brokers usan el piso ficticio de ${fmtMoney(INDIVIDUAL_FLOOR)} hasta llenar <code>INDIVIDUAL_AVG_SEMESTRAL</code> arriba en el codigo.</p>
+  <p class="note">Nota: promedios semestrales individuales cargados desde Mundial de Ventas (Ene-Jun 2026). Quien no tenga dato real (staff u otros sin historial) usa el piso ficticio de ${fmtMoney(INDIVIDUAL_FLOOR)} en <code>INDIVIDUAL_AVG_SEMESTRAL</code>.</p>
   `;
 
   document.getElementById('debugDetails').innerHTML = html;
