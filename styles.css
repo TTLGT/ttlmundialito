@@ -138,6 +138,10 @@ table.loads-table th{color:var(--muted);text-transform:uppercase;font-size:10.5p
 .progress-label{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-bottom:3px;}
 .bar-bg{background:#0b1120;border:1px solid var(--border);border-radius:8px;height:10px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--blue),var(--gold));transition:width .4s;}
+.bar-fill.flag-fr{background:linear-gradient(90deg,#002654,#8fa8c8,#fff,#f3a8ae,#ED2939);}
+.bar-fill.flag-ar{background:linear-gradient(90deg,#74ACDF,#fff,#74ACDF);}
+.bar-fill.flag-es{background:linear-gradient(90deg,#AA151B,#F1BF00,#AA151B);}
+.bar-fill.flag-no{background:linear-gradient(90deg,#EF2B2D,#fff,#002868,#fff,#EF2B2D);}
 .duel-result{text-align:center;margin-top:10px;font-size:12.5px;color:var(--muted);}
 .pct-pill{
   display:inline-block;padding:2px 9px;border-radius:12px;font-weight:700;font-size:12px;

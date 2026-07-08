@@ -774,11 +774,11 @@ function renderMatchCard(teamA, teamB, m, tag) {
     <div class="progress-wrap">
       <div class="progress-row">
         <div class="progress-label"><span>${teamA.name}: ${fmtMoney(m.salesA)}</span><span>meta ${fmtMoney(teamA.baseReal)}</span></div>
-        <div class="bar-bg"><div class="bar-fill" style="width:${progA}%"></div></div>
+        <div class="bar-bg"><div class="bar-fill flag-${teamA.flagCode.toLowerCase()}" style="width:${progA}%"></div></div>
       </div>
       <div class="progress-row">
         <div class="progress-label"><span>${teamB.name}: ${fmtMoney(m.salesB)}</span><span>meta ${fmtMoney(teamB.baseReal)}</span></div>
-        <div class="bar-bg"><div class="bar-fill" style="width:${progB}%"></div></div>
+        <div class="bar-bg"><div class="bar-fill flag-${teamB.flagCode.toLowerCase()}" style="width:${progB}%"></div></div>
       </div>
     </div>
     <div class="duel-result">${winnerText}</div>
