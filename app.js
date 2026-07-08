@@ -259,6 +259,9 @@ function getCurrentWeek(now) {
   for (const w of WEEKS) if (!weekHasEnded(w, now) ) { if(weekHasStarted(w,now) || w.id===1) return w; }
   return WEEKS[WEEKS.length - 1];
 }
+function getWeekForDate(date) {
+  return WEEKS.find(w => dayjsInWeek(date, w)) || null;
+}
 
 /* ============================================================
    INDICE DE MIEMBROS (para reconocer brokers del sheet)
@@ -581,6 +584,9 @@ function computeCargaDeOro(weekId, idx) {
    RENDER
    ============================================================ */
 let currentTeamTab = 1;
+const expandedTeams = new Set();
+const expandedMembers = new Set();
+let STANDINGS_CACHE = { standings: null, now: null, idx: null };
 
 function renderAll() {
   const now = new Date();
@@ -588,7 +594,8 @@ function renderAll() {
   const groupMatches = computeGroupStageMatches(idx, now);
   const standings = computeStandingsFromMatches(groupMatches);
 
-  renderStandings(standings, now);
+  STANDINGS_CACHE = { standings, now, idx };
+  renderStandings(standings, now, idx);
   renderCurrentWeek(idx, now);
   renderBracket(idx, groupMatches, standings, now);
   renderTeamSelect();
@@ -597,24 +604,100 @@ function renderAll() {
   renderDebug(groupMatches, idx);
 }
 
-function renderStandings(standings, now) {
+function renderScoringLegend() {
+  const bonusNote = PREMIOS_DAN_PUNTO_EXTRA
+    ? 'El equipo del ganador de cada premio individual (Camión de Oro / Carga de Oro) recibe +1 punto extra.'
+    : 'Los premios individuales (Camión de Oro / Carga de Oro) son honoríficos y NO otorgan puntos al equipo en esta edición.';
+  document.getElementById('scoringLegend').innerHTML = `
+    <ul class="legend-list">
+      <li><strong>PJ</strong> — Partidos (duelos) jugados en la fase de grupos.</li>
+      <li><strong>G / P</strong> — Duelos ganados / perdidos. Se gana un duelo cuando el % de crecimiento de tu equipo (ventas de la semana vs. tu umbral) es mayor al del rival. Si el % es exactamente igual para ambos, gana quien vendió más en monto; si también empatan en monto, el duelo se cuenta como "ganado" para los dos equipos.</li>
+      <li><strong>PTS</strong> — Puntos acumulados. Por cada duelo jugado:
+        <ul>
+          <li>Ganas el duelo y alcanzas tu umbral semanal → <strong>3 pts</strong></li>
+          <li>Ganas el duelo sin alcanzar tu umbral → <strong>1 pt</strong></li>
+          <li>Pierdes el duelo pero sí alcanzas tu umbral → <strong>1 pt</strong></li>
+          <li>Pierdes el duelo y no alcanzas tu umbral → <strong>0 pts</strong></li>
+          <li>Bono equipo: <strong>+1 pt</strong> extra si TODOS los vendedores requeridos del equipo (excluye staff y a quienes están exentos de bono) tuvieron al menos una venta esa semana.</li>
+        </ul>
+      </li>
+      <li><strong>% ACUM.</strong> — Promedio del % de crecimiento (ventas vs. umbral) del equipo en los duelos jugados. Se usa únicamente como <em>criterio de desempate</em> en la tabla; el campeón del torneo se decide en la Gran Final, no por esta tabla.</li>
+      <li>${bonusNote}</li>
+    </ul>
+  `;
+}
+
+function renderStandings(standings, now, idx) {
   const week3Ended = weekHasEnded(WEEKS[2], now);
+  const week = getCurrentWeek(now);
   let html = `<tr>
-    <th>#</th><th style="text-align:left">Equipo</th><th>PJ</th><th>G</th><th>P</th><th>Pts</th><th>% acum.</th>
+    <th></th><th>#</th><th style="text-align:left">Equipo</th><th>PJ</th><th>G</th><th>P</th><th>Pts</th><th>% acum.</th>
   </tr>`;
   standings.forEach((r, i) => {
     const team = teamById(r.teamId);
-    html += `<tr class="${i === 0 ? 'rank1' : ''}">
+    const isOpen = expandedTeams.has(team.id);
+    html += `<tr class="${i === 0 ? 'rank1' : ''} standings-row" data-team-toggle="${team.id}">
+      <td class="chevron">${isOpen ? '▾' : '▸'}</td>
       <td>${i + 1}</td>
       <td class="team-cell">${flagIcon(team.flagCode)}${team.name}</td>
       <td>${r.pj}</td><td>${r.g}</td><td>${r.p}</td>
       <td><strong>${r.pts}</strong></td>
       <td>${fmtPct(r.pctAvg)}</td>
     </tr>`;
+    if (isOpen) {
+      html += `<tr class="team-detail-row"><td colspan="8">${renderTeamMemberDetail(team, idx, week)}</td></tr>`;
+    }
   });
   document.getElementById('standingsTable').innerHTML = html;
-  const note = document.querySelector('#view-posiciones .note');
+  const note = document.querySelector('#view-posiciones .card > .note:last-child');
   if (!week3Ended) note.textContent = 'Tabla en vivo — fase de grupos aun en curso. Desempate: mayor % de crecimiento acumulado (vs. base interna) en las 3 fechas de fase de grupos.';
+}
+
+function renderTeamMemberDetail(team, idx, week) {
+  let rows = '';
+  team.members.forEach(m => {
+    const sales = (idx.salesByBrokerWeek[m._key] || {})[week.id] || 0;
+    const set = (idx.ordersByBrokerWeek[m._key] || {})[week.id];
+    const cargas = set ? set.size : 0;
+    const avg = getMemberAvg(m._key);
+    const pct = ((sales - avg) / avg) * 100;
+    const tag = m.staff ? '<span class="badge-staff">staff</span>' : (m.bonusExempt ? '<span class="badge-exempt">exento bono</span>' : '');
+    const isMemberOpen = expandedMembers.has(m._key);
+    rows += `<tr class="member-row" data-member-toggle="${m._key}">
+      <td class="chevron">${cargas ? (isMemberOpen ? '▾' : '▸') : ''}</td>
+      <td>${m.name}${tag}</td>
+      <td>${fmtMoney(sales)}</td>
+      <td>${fmtMoney(avg)}</td>
+      <td class="${pct >= 0 ? 'pos' : 'neg'}">${fmtPct(pct)}</td>
+      <td>${cargas}</td>
+    </tr>`;
+    if (isMemberOpen && cargas) {
+      const loads = getMemberLoads(m._key, week.id);
+      const loadRows = loads.map(l => `<tr><td>${l.orden || '(sin # de orden)'}</td><td>${fmtMoney(l.monto)}</td><td>${l.date.toISOString().slice(0, 10)}</td></tr>`).join('');
+      rows += `<tr class="member-loads-row"><td></td><td colspan="5">
+        <table class="loads-table">
+          <thead><tr><th>Orden</th><th>Monto (fee)</th><th>Fecha</th></tr></thead>
+          <tbody>${loadRows}</tbody>
+        </table>
+      </td></tr>`;
+    }
+  });
+  return `
+    <div class="member-detail-wrap">
+      <div class="member-detail-title">${flagIcon(team.flagCode)}${team.name} — detalle de ${week.label}</div>
+      <table class="roster">
+        <thead><tr><th></th><th>Integrante</th><th>Ventas semana</th><th>Meta personal semanal</th><th>% vs. meta</th><th>Cargas</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p class="note">Meta personal semanal = promedio semanal semestral del broker (piso ficticio de ${fmtMoney(INDIVIDUAL_FLOOR)} mientras no se cargue el dato real). Toca una fila con cargas para ver el detalle de cada carga y su monto/fee.</p>
+    </div>
+  `;
+}
+
+function getMemberLoads(memberKey, weekId) {
+  return ALL_TRANSACTIONS
+    .filter(tx => tx.broker === memberKey && (getWeekForDate(tx.date) || {}).id === weekId)
+    .sort((a, b) => a.date - b.date);
 }
 
 function renderCurrentWeek(idx, now) {
@@ -876,6 +959,24 @@ document.querySelectorAll('nav.tabs button').forEach(btn => {
 });
 
 document.getElementById('btnRefresh').addEventListener('click', loadAllData);
+
+document.getElementById('standingsTable').addEventListener('click', (e) => {
+  const memberToggle = e.target.closest('[data-member-toggle]');
+  const teamToggle = e.target.closest('[data-team-toggle]');
+  if (memberToggle) {
+    const key = memberToggle.dataset.memberToggle;
+    if (expandedMembers.has(key)) expandedMembers.delete(key); else expandedMembers.add(key);
+    if (STANDINGS_CACHE.standings) renderStandings(STANDINGS_CACHE.standings, STANDINGS_CACHE.now, STANDINGS_CACHE.idx);
+    return;
+  }
+  if (teamToggle) {
+    const id = parseInt(teamToggle.dataset.teamToggle, 10);
+    if (expandedTeams.has(id)) expandedTeams.delete(id); else expandedTeams.add(id);
+    if (STANDINGS_CACHE.standings) renderStandings(STANDINGS_CACHE.standings, STANDINGS_CACHE.now, STANDINGS_CACHE.idx);
+  }
+});
+
+renderScoringLegend();
 
 document.getElementById('teamFlagsSub').innerHTML = TEAMS.map(t =>
   `${t.name} ${flagIcon(t.flagCode)}`

@@ -93,8 +93,28 @@ table.standings{width:100%;border-collapse:collapse;font-size:13.5px;}
 table.standings th,table.standings td{padding:9px 8px;text-align:center;border-bottom:1px solid var(--border);}
 table.standings th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px;}
 table.standings td.team-cell{text-align:left;font-weight:600;}
+table.standings tr.standings-row{cursor:pointer;}
 table.standings tr:hover td{background:rgba(255,209,102,.05);}
 table.standings tr.rank1 td.team-cell{color:var(--gold);}
+table.standings td.chevron{color:var(--gold2);font-size:11px;width:16px;}
+table.standings tr.team-detail-row td{background:#0b1120;padding:12px;cursor:default;}
+table.standings tr.team-detail-row:hover td{background:#0b1120;}
+
+.legend-panel{margin-bottom:14px;}
+.legend-list{margin:10px 0 4px;padding-left:20px;font-size:12.5px;color:var(--text);line-height:1.6;}
+.legend-list ul{margin:4px 0 8px;padding-left:18px;color:var(--muted);}
+.legend-list li{margin-bottom:6px;}
+
+.member-detail-wrap{text-align:left;}
+.member-detail-title{font-weight:700;color:var(--gold2);margin-bottom:8px;display:flex;align-items:center;}
+table.roster tr.member-row{cursor:default;}
+table.roster tr.member-row[data-member-toggle]{cursor:pointer;}
+table.roster td.pos{color:var(--green);font-weight:600;}
+table.roster td.neg{color:var(--red);font-weight:600;}
+table.roster td.chevron{color:var(--gold2);font-size:11px;width:14px;}
+table.loads-table{width:100%;border-collapse:collapse;font-size:12px;margin:4px 0 10px;background:#080c18;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+table.loads-table th,table.loads-table td{padding:6px 10px;text-align:left;border-bottom:1px dashed var(--border);}
+table.loads-table th{color:var(--muted);text-transform:uppercase;font-size:10.5px;}
 .flag-icon{display:inline-block;width:20px;height:14px;vertical-align:middle;border-radius:2px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.15);margin-right:6px;}
 .flag-icon svg{width:100%;height:100%;display:block;}
 .flag-icon.big{width:46px;height:32px;display:block;margin:0 auto 6px;}
