@@ -629,8 +629,8 @@ function renderAll() {
 
 function renderScoringLegend() {
   const bonusNote = PREMIOS_DAN_PUNTO_EXTRA
-    ? 'El equipo del ganador de cada premio individual (Camión de Oro / Carga de Oro) recibe +1 punto extra.'
-    : 'Los premios individuales (Camión de Oro / Carga de Oro) son honoríficos y NO otorgan puntos al equipo en esta edición.';
+    ? 'El equipo del ganador de cada premio individual (Golden Wheel / Carga Dorada) recibe +1 punto extra.'
+    : 'Los premios individuales (Golden Wheel / Carga Dorada) son honoríficos y NO otorgan puntos al equipo en esta edición.';
   document.getElementById('scoringLegend').innerHTML = `
     <ul class="legend-list">
       <li><strong>PJ</strong> — Partidos (duelos) jugados en la fase de grupos.</li>
