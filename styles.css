@@ -16,7 +16,7 @@
   --es:#e0263a;
   --no:#c8102e;
 }
-*{box-sizing:border-box;}
+*{box-sizing:border-box;font-family:inherit;}
 html,body{margin:0;padding:0;}
 body{
   background:
@@ -24,7 +24,7 @@ body{
     radial-gradient(1200px 700px at 110% 10%, #22315c 0%, transparent 55%),
     var(--bg);
   color:var(--text);
-  font-family:'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+  font-family:'IBM Plex Sans', 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
   min-height:100vh;
   padding-bottom:40px;
 }
