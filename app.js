@@ -500,6 +500,10 @@ function requiredSellers(team) {
   return team.members.filter(m => !m.staff && !m.bonusExempt);
 }
 
+function membersStaffFirst(team) {
+  return [...team.members].sort((a, b) => (b.staff ? 1 : 0) - (a.staff ? 1 : 0));
+}
+
 function teamBonusAchieved(team, weekId, salesByBrokerWeek) {
   const req = requiredSellers(team);
   if (req.length === 0) return true;
@@ -678,13 +682,13 @@ function renderStandings(standings, now, idx) {
 
 function renderTeamMemberDetail(team, idx, week) {
   let rows = '';
-  team.members.forEach(m => {
+  membersStaffFirst(team).forEach(m => {
     const sales = (idx.salesByBrokerWeek[m._key] || {})[week.id] || 0;
     const set = (idx.ordersByBrokerWeek[m._key] || {})[week.id];
     const cargas = set ? set.size : 0;
     const avg = getMemberAvg(m._key);
     const pct = ((sales - avg) / avg) * 100;
-    const tag = m.staff ? '<span class="badge-staff">staff</span>' : (m.bonusExempt ? '<span class="badge-exempt">exento bono</span>' : '');
+    const tag = m.staff ? '<span class="badge-staff">Director Técnico</span>' : (m.bonusExempt ? '<span class="badge-exempt">exento bono</span>' : '');
     const isMemberOpen = expandedMembers.has(m._key);
     rows += `<tr class="member-row" data-member-toggle="${m._key}">
       <td class="chevron">${cargas ? (isMemberOpen ? '▾' : '▸') : ''}</td>
@@ -871,12 +875,12 @@ function renderTeamDetail(teamId, idx, now) {
   const teamSales = idx.teamSalesByWeek[teamId][week.id] || 0;
 
   let rows = '';
-  team.members.forEach(m => {
+  membersStaffFirst(team).forEach(m => {
     const sales = (idx.salesByBrokerWeek[m._key] || {})[week.id] || 0;
     const set = (idx.ordersByBrokerWeek[m._key] || {})[week.id];
     const cargas = set ? set.size : 0;
     const aporte = teamSales !== 0 ? (sales / teamSales) * 100 : 0;
-    const tag = m.staff ? '<span class="badge-staff">staff</span>' : (m.bonusExempt ? '<span class="badge-exempt">exento bono</span>' : '');
+    const tag = m.staff ? '<span class="badge-staff">Director Técnico</span>' : (m.bonusExempt ? '<span class="badge-exempt">exento bono</span>' : '');
     rows += `<tr>
       <td>${m.name}${tag}</td>
       <td>${fmtMoney(sales)}</td>
