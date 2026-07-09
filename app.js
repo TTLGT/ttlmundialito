@@ -61,7 +61,7 @@ const ALIAS_MAP = {
 const EXCLUDED_NAMES = ['KEVIN ROMERO', 'DANIEL VELASQUEZ'];
 
 const WEEKS = [
-  { id: 1, label: 'Semana 1', start: '2026-07-06', end: '2026-07-12' },
+  { id: 1, label: 'Semana 1', start: '2026-07-01', end: '2026-07-10' },
   { id: 2, label: 'Semana 2', start: '2026-07-13', end: '2026-07-19' },
   { id: 3, label: 'Semana 3', start: '2026-07-20', end: '2026-07-26' },
   { id: 4, label: 'Semana 4 · Finales', start: '2026-07-27', end: '2026-08-02' },
