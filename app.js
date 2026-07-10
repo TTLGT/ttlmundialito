@@ -836,7 +836,7 @@ function renderBracket(idx, groupMatches, standings, now) {
         const teamA = teamById(a), teamB = teamById(b);
         html += `<div class="bracket-match decided">
           <div class="side"><span class="${m.winner === 'A' ? 'winner-name' : ''}">${flagIcon(teamA.flagCode)}${teamA.name}</span></div>
-          <div class="bracket-score">${fmtPct(m.pctA)} — ${fmtPct(m.pctB)}</div>
+          <div class="bracket-score"><span class="${m.pctA >= 0 ? 'pos' : 'neg'}">${fmtPct(m.pctA)}</span> — <span class="${m.pctB >= 0 ? 'pos' : 'neg'}">${fmtPct(m.pctB)}</span></div>
           <div class="side right"><span class="${m.winner === 'B' ? 'winner-name' : ''}">${teamB.name}${flagIcon(teamB.flagCode)}</span></div>
         </div>`;
       });
@@ -856,7 +856,7 @@ function renderBracket(idx, groupMatches, standings, now) {
       const m = computeMatch(a, b, 4, idx);
       html += `<div class="bracket-match decided">
         <div class="side"><span class="pill-tag">${tag}</span> <span class="${m.winner === 'A' ? 'winner-name' : ''}">${flagIcon(teamA.flagCode)}${teamA.name}</span></div>
-        <div class="bracket-score">${fmtPct(m.pctA)} — ${fmtPct(m.pctB)}</div>
+        <div class="bracket-score"><span class="${m.pctA >= 0 ? 'pos' : 'neg'}">${fmtPct(m.pctA)}</span> — <span class="${m.pctB >= 0 ? 'pos' : 'neg'}">${fmtPct(m.pctB)}</span></div>
         <div class="side right"><span class="${m.winner === 'B' ? 'winner-name' : ''}">${teamB.name}${flagIcon(teamB.flagCode)}</span></div>
       </div>`;
     } else {
