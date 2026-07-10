@@ -60,11 +60,15 @@ const ALIAS_MAP = {
 
 const EXCLUDED_NAMES = ['KEVIN ROMERO', 'DANIEL VELASQUEZ'];
 
+// start/end son solo para mostrar en pantalla. filterStart/filterEnd (si se
+// definen) son los limites reales usados para clasificar ventas por fecha;
+// null significa "sin limite" (Semana 1 tambien cuenta ventas de fechas
+// anteriores, Semana 4 tambien cuenta ventas de fechas posteriores).
 const WEEKS = [
-  { id: 1, label: 'Semana 1', start: '2026-07-01', end: '2026-07-10' },
+  { id: 1, label: 'Semana 1', start: '2026-07-01', end: '2026-07-10', filterStart: null },
   { id: 2, label: 'Semana 2', start: '2026-07-13', end: '2026-07-19' },
-  { id: 3, label: 'Semana 3', start: '2026-07-20', end: '2026-07-26' },
-  { id: 4, label: 'Semana 4 · Finales', start: '2026-07-27', end: '2026-08-02' },
+  { id: 3, label: 'Semana 3', start: '2026-07-20', end: '2026-07-25' },
+  { id: 4, label: 'Semana 4 · Finales', start: '2026-07-26', end: '2026-07-31', filterEnd: null },
 ];
 
 const TEAMS = [
@@ -268,8 +272,10 @@ function fmtPct(n) {
 }
 function dayjsInWeek(date, week) {
   const t = date.getTime();
-  const start = Date.parse(week.start + 'T00:00:00Z');
-  const end = Date.parse(week.end + 'T23:59:59Z');
+  const startStr = 'filterStart' in week ? week.filterStart : week.start;
+  const endStr = 'filterEnd' in week ? week.filterEnd : week.end;
+  const start = startStr ? Date.parse(startStr + 'T00:00:00Z') : -Infinity;
+  const end = endStr ? Date.parse(endStr + 'T23:59:59Z') : Infinity;
   return t >= start && t <= end;
 }
 function weekHasStarted(week, now) {
