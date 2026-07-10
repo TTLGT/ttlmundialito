@@ -912,12 +912,24 @@ function renderTeamDetail(teamId, idx, now) {
     const cargas = set ? set.size : 0;
     const aporte = teamSales !== 0 ? (sales / teamSales) * 100 : 0;
     const tag = m.staff ? '<span class="badge-staff">Director Técnico</span>' : (m.bonusExempt ? '<span class="badge-exempt">exento bono</span>' : '');
-    rows += `<tr>
+    const isMemberOpen = expandedMembers.has(m._key);
+    rows += `<tr class="member-row" data-member-toggle="${m._key}">
+      <td class="chevron">${cargas ? (isMemberOpen ? '▾' : '▸') : ''}</td>
       <td>${m.name}${tag}</td>
       <td>${fmtMoney(sales)}</td>
       <td>${cargas}</td>
       <td>${aporte.toFixed(1)}%</td>
     </tr>`;
+    if (isMemberOpen && cargas) {
+      const loads = getMemberLoads(m._key, week.id);
+      const loadRows = loads.map(l => `<tr><td>${l.orden || '(sin # de orden)'}</td><td>${fmtMoney(l.monto)}</td><td>${l.date.toISOString().slice(0, 10)}</td></tr>`).join('');
+      rows += `<tr class="member-loads-row"><td></td><td colspan="4">
+        <table class="loads-table">
+          <thead><tr><th>Orden</th><th>Monto (fee)</th><th>Fecha</th></tr></thead>
+          <tbody>${loadRows}</tbody>
+        </table>
+      </td></tr>`;
+    }
   });
 
   document.getElementById('teamDetail').innerHTML = `
@@ -925,7 +937,7 @@ function renderTeamDetail(teamId, idx, now) {
     ${dtHeaderLine(hiddenStaff)}
     <p class="note">Ventas del equipo esta semana: <strong>${fmtMoney(teamSales)}</strong> · Base real de referencia: ${fmtMoney(team.baseReal)}</p>
     <table class="roster">
-      <thead><tr><th>Integrante</th><th>Ventas semana</th><th>Cargas (ordenes unicas)</th><th>Aporte al equipo</th></tr></thead>
+      <thead><tr><th></th><th>Integrante</th><th>Ventas semana</th><th>Cargas (ordenes unicas)</th><th>Aporte al equipo</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div class="bonus-banner ${bonusOk ? 'bonus-yes' : 'bonus-no'}">
@@ -1033,6 +1045,15 @@ document.getElementById('standingsTable').addEventListener('click', (e) => {
     if (expandedTeams.has(id)) expandedTeams.delete(id); else expandedTeams.add(id);
     if (STANDINGS_CACHE.standings) renderStandings(STANDINGS_CACHE.standings, STANDINGS_CACHE.now, STANDINGS_CACHE.idx);
   }
+});
+
+document.getElementById('teamDetail').addEventListener('click', (e) => {
+  const memberToggle = e.target.closest('[data-member-toggle]');
+  if (!memberToggle) return;
+  const key = memberToggle.dataset.memberToggle;
+  if (expandedMembers.has(key)) expandedMembers.delete(key); else expandedMembers.add(key);
+  const idx = buildWeeklyIndex(ALL_TRANSACTIONS);
+  renderTeamDetail(currentTeamTab, idx, new Date());
 });
 
 renderScoringLegend();
