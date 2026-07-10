@@ -96,7 +96,7 @@ table.standings td.team-cell{text-align:left;font-weight:600;}
 table.standings tr.standings-row{cursor:pointer;}
 table.standings tr:hover td{background:rgba(255,209,102,.05);}
 table.standings tr.rank1 td.team-cell{color:var(--gold);}
-table.standings td.chevron{color:var(--gold2);font-size:11px;width:16px;}
+table.standings td.chevron{color:var(--gold2);font-size:18px;font-weight:700;width:20px;}
 table.standings tr.team-detail-row td{background:#0b1120;padding:12px;cursor:default;}
 table.standings tr.team-detail-row:hover td{background:#0b1120;}
 
@@ -115,7 +115,7 @@ table.roster td.pos{color:var(--green);font-weight:600;}
 table.roster td.neg{color:var(--red);font-weight:600;}
 table.roster td.warn-orange{color:var(--gold2);font-weight:600;}
 table.roster td.warn-yellow{color:var(--gold);font-weight:600;}
-table.roster td.chevron{color:var(--gold2);font-size:11px;width:14px;}
+table.roster td.chevron{color:var(--gold2);font-size:16px;font-weight:700;width:18px;}
 table.loads-table{width:100%;border-collapse:collapse;font-size:12px;margin:4px 0 10px;background:#080c18;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
 table.loads-table th,table.loads-table td{padding:6px 10px;text-align:left;border-bottom:1px dashed var(--border);}
 table.loads-table th{color:var(--muted);text-transform:uppercase;font-size:10.5px;}
