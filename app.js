@@ -78,7 +78,7 @@ const TEAMS = [
       { name: 'Ale Noriega' },
       { name: 'Edduar Gudiel' },
       { name: 'Gabe Mendez' },
-      { name: 'Jose Ruano', bonusExempt: true },
+      { name: 'Jose Ruano', staff: true },
     ],
   },
   {
@@ -103,7 +103,7 @@ const TEAMS = [
       { name: 'Juan Diaz' },
       { name: 'Paul Bats' },
       { name: 'Bryan Guerra' },
-      { name: 'Charly Molina', bonusExempt: true },
+      { name: 'Charly Molina', staff: true },
       { name: 'Erwin Solorzano', staff: true },
     ],
   },
@@ -500,8 +500,30 @@ function requiredSellers(team) {
   return team.members.filter(m => !m.staff && !m.bonusExempt);
 }
 
-function membersStaffFirst(team) {
-  return [...team.members].sort((a, b) => (b.staff ? 1 : 0) - (a.staff ? 1 : 0));
+function staffFirst(members) {
+  return [...members].sort((a, b) => (b.staff ? 1 : 0) - (a.staff ? 1 : 0));
+}
+
+// Directores tecnicos (staff) solo aparecen en la tabla de ventas si tuvieron
+// ventas esa semana; de lo contrario se muestran solo en el encabezado del equipo.
+function splitTeamMembers(team, idx, weekId) {
+  const tableMembers = [];
+  const hiddenStaff = [];
+  team.members.forEach(m => {
+    if (m.staff) {
+      const sales = (idx.salesByBrokerWeek[m._key] || {})[weekId] || 0;
+      if (sales > 0) tableMembers.push(m); else hiddenStaff.push(m);
+    } else {
+      tableMembers.push(m);
+    }
+  });
+  return { tableMembers: staffFirst(tableMembers), hiddenStaff };
+}
+
+function dtHeaderLine(hiddenStaff) {
+  if (!hiddenStaff.length) return '';
+  const label = hiddenStaff.length > 1 ? 'Directores Técnicos' : 'Director Técnico';
+  return `<div class="dt-line"><span class="badge-staff">${label}</span> ${hiddenStaff.map(m => m.name).join(', ')}</div>`;
 }
 
 function teamBonusAchieved(team, weekId, salesByBrokerWeek) {
@@ -681,8 +703,9 @@ function renderStandings(standings, now, idx) {
 }
 
 function renderTeamMemberDetail(team, idx, week) {
+  const { tableMembers, hiddenStaff } = splitTeamMembers(team, idx, week.id);
   let rows = '';
-  membersStaffFirst(team).forEach(m => {
+  tableMembers.forEach(m => {
     const sales = (idx.salesByBrokerWeek[m._key] || {})[week.id] || 0;
     const set = (idx.ordersByBrokerWeek[m._key] || {})[week.id];
     const cargas = set ? set.size : 0;
@@ -712,6 +735,7 @@ function renderTeamMemberDetail(team, idx, week) {
   return `
     <div class="member-detail-wrap">
       <div class="member-detail-title">${flagIcon(team.flagCode)}${team.name} — detalle de ${week.label}</div>
+      ${dtHeaderLine(hiddenStaff)}
       <table class="roster">
         <thead><tr><th></th><th>Integrante</th><th>Ventas semana</th><th>Meta personal semanal</th><th>% vs. meta</th><th>Cargas</th></tr></thead>
         <tbody>${rows}</tbody>
@@ -874,8 +898,9 @@ function renderTeamDetail(teamId, idx, now) {
   const bonusOk = teamBonusAchieved(team, week.id, idx.salesByBrokerWeek);
   const teamSales = idx.teamSalesByWeek[teamId][week.id] || 0;
 
+  const { tableMembers, hiddenStaff } = splitTeamMembers(team, idx, week.id);
   let rows = '';
-  membersStaffFirst(team).forEach(m => {
+  tableMembers.forEach(m => {
     const sales = (idx.salesByBrokerWeek[m._key] || {})[week.id] || 0;
     const set = (idx.ordersByBrokerWeek[m._key] || {})[week.id];
     const cargas = set ? set.size : 0;
@@ -891,6 +916,7 @@ function renderTeamDetail(teamId, idx, now) {
 
   document.getElementById('teamDetail').innerHTML = `
     <h3 style="margin-top:0;">${flagIcon(team.flagCode)}${team.name} — ${week.label}</h3>
+    ${dtHeaderLine(hiddenStaff)}
     <p class="note">Ventas del equipo esta semana: <strong>${fmtMoney(teamSales)}</strong> · Base real de referencia: ${fmtMoney(team.baseReal)}</p>
     <table class="roster">
       <thead><tr><th>Integrante</th><th>Ventas semana</th><th>Cargas (ordenes unicas)</th><th>Aporte al equipo</th></tr></thead>
