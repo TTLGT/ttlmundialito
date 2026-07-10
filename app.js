@@ -611,7 +611,7 @@ function getMemberAvg(memberKey) {
 function computeCamionDeOro(weekId, idx) {
   const rows = [];
   TEAMS.forEach(team => {
-    team.members.forEach(m => {
+    team.members.filter(m => !m.staff).forEach(m => {
       const sales = (idx.salesByBrokerWeek[m._key] || {})[weekId] || 0;
       const avg = getMemberAvg(m._key);
       const pct = ((sales - avg) / avg) * 100;
@@ -625,7 +625,7 @@ function computeCamionDeOro(weekId, idx) {
 function computeCargaDeOro(weekId, idx) {
   const rows = [];
   TEAMS.forEach(team => {
-    team.members.forEach(m => {
+    team.members.filter(m => !m.staff).forEach(m => {
       const set = (idx.ordersByBrokerWeek[m._key] || {})[weekId];
       const count = set ? set.size : 0;
       rows.push({ name: m.name, teamFlagCode: team.flagCode, teamName: team.name, count });
