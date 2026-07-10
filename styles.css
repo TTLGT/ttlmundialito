@@ -113,6 +113,8 @@ table.roster tr.member-row{cursor:default;}
 table.roster tr.member-row[data-member-toggle]{cursor:pointer;}
 table.roster td.pos{color:var(--green);font-weight:600;}
 table.roster td.neg{color:var(--red);font-weight:600;}
+table.roster td.warn-orange{color:var(--gold2);font-weight:600;}
+table.roster td.warn-yellow{color:var(--gold);font-weight:600;}
 table.roster td.chevron{color:var(--gold2);font-size:11px;width:14px;}
 table.loads-table{width:100%;border-collapse:collapse;font-size:12px;margin:4px 0 10px;background:#080c18;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
 table.loads-table th,table.loads-table td{padding:6px 10px;text-align:left;border-bottom:1px dashed var(--border);}
@@ -163,6 +165,8 @@ table.loads-table th{color:var(--muted);text-transform:uppercase;font-size:10.5p
 .bracket-score{font-weight:800;font-size:15px;min-width:110px;text-align:center;color:var(--text);}
 .bracket-score .pos{color:var(--green);}
 .bracket-score .neg{color:var(--red);}
+.bracket-score .warn-orange{color:var(--gold2);}
+.bracket-score .warn-yellow{color:var(--gold);}
 .bracket-match.decided .winner-name{color:var(--gold);}
 .pill-tag{font-size:10px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:2px 7px;color:var(--muted);margin-left:6px;}
 

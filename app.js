@@ -270,6 +270,14 @@ function fmtPct(n) {
   if (isNaN(n) || n == null) return '0%';
   return (n > 0 ? '+' : '') + n.toFixed(1) + '%';
 }
+// Gradiente rojo -> naranja -> amarillo -> verde segun que tan cerca de
+// positivo esta el %, para que los negativos "menos malos" se vean mejor.
+function pctColorClass(n) {
+  if (n >= 0) return 'pos';
+  if (n >= -25) return 'warn-yellow';
+  if (n >= -50) return 'warn-orange';
+  return 'neg';
+}
 function dayjsInWeek(date, week) {
   const t = date.getTime();
   const startStr = 'filterStart' in week ? week.filterStart : week.start;
@@ -724,7 +732,7 @@ function renderTeamMemberDetail(team, idx, week) {
       <td>${m.name}${tag}</td>
       <td>${fmtMoney(sales)}</td>
       <td>${fmtMoney(avg)}</td>
-      <td class="${pct >= 0 ? 'pos' : 'neg'}">${fmtPct(pct)}</td>
+      <td class="${pctColorClass(pct)}">${fmtPct(pct)}</td>
       <td>${cargas}</td>
     </tr>`;
     if (isMemberOpen && cargas) {
@@ -753,7 +761,7 @@ function renderTeamMemberDetail(team, idx, week) {
 
 function getMemberLoads(memberKey, weekId) {
   return ALL_TRANSACTIONS
-    .filter(tx => tx.broker === memberKey && (getWeekForDate(tx.date) || {}).id === weekId)
+    .filter(tx => tx.broker === memberKey && (getWeekForDate(tx.date) || {}).id === weekId && (tx.orden || tx.monto))
     .sort((a, b) => a.date - b.date);
 }
 
@@ -836,7 +844,7 @@ function renderBracket(idx, groupMatches, standings, now) {
         const teamA = teamById(a), teamB = teamById(b);
         html += `<div class="bracket-match decided">
           <div class="side"><span class="${m.winner === 'A' ? 'winner-name' : ''}">${flagIcon(teamA.flagCode)}${teamA.name}</span></div>
-          <div class="bracket-score"><span class="${m.pctA >= 0 ? 'pos' : 'neg'}">${fmtPct(m.pctA)}</span> — <span class="${m.pctB >= 0 ? 'pos' : 'neg'}">${fmtPct(m.pctB)}</span></div>
+          <div class="bracket-score"><span class="${pctColorClass(m.pctA)}">${fmtPct(m.pctA)}</span> — <span class="${pctColorClass(m.pctB)}">${fmtPct(m.pctB)}</span></div>
           <div class="side right"><span class="${m.winner === 'B' ? 'winner-name' : ''}">${teamB.name}${flagIcon(teamB.flagCode)}</span></div>
         </div>`;
       });
@@ -856,7 +864,7 @@ function renderBracket(idx, groupMatches, standings, now) {
       const m = computeMatch(a, b, 4, idx);
       html += `<div class="bracket-match decided">
         <div class="side"><span class="pill-tag">${tag}</span> <span class="${m.winner === 'A' ? 'winner-name' : ''}">${flagIcon(teamA.flagCode)}${teamA.name}</span></div>
-        <div class="bracket-score"><span class="${m.pctA >= 0 ? 'pos' : 'neg'}">${fmtPct(m.pctA)}</span> — <span class="${m.pctB >= 0 ? 'pos' : 'neg'}">${fmtPct(m.pctB)}</span></div>
+        <div class="bracket-score"><span class="${pctColorClass(m.pctA)}">${fmtPct(m.pctA)}</span> — <span class="${pctColorClass(m.pctB)}">${fmtPct(m.pctB)}</span></div>
         <div class="side right"><span class="${m.winner === 'B' ? 'winner-name' : ''}">${teamB.name}${flagIcon(teamB.flagCode)}</span></div>
       </div>`;
     } else {
