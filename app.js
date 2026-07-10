@@ -792,7 +792,7 @@ function renderCurrentWeek(idx, now) {
 }
 
 function renderMatchCard(teamA, teamB, m, tag) {
-  const pctPill = (p) => `<span class="pct-pill ${p < 0 ? 'neg' : ''}">${fmtPct(p)}</span>`;
+  const pctPill = (p) => `<span class="pct-pill ${pctColorClass(p)}">${fmtPct(p)}</span>`;
   const winnerText = m.winner === 'draw'
     ? 'Empate en el duelo — ambos ganan el duelo'
     : `${m.winner === 'A' ? teamA.name : teamB.name} va ganando el duelo`;

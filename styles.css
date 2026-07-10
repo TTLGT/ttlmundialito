@@ -151,7 +151,10 @@ table.loads-table th{color:var(--muted);text-transform:uppercase;font-size:10.5p
   display:inline-block;padding:2px 9px;border-radius:12px;font-weight:700;font-size:12px;
   background:rgba(31,185,104,.15);color:var(--green);
 }
+.pct-pill.pos{background:rgba(31,185,104,.15);color:var(--green);}
 .pct-pill.neg{background:rgba(239,71,111,.15);color:var(--red);}
+.pct-pill.warn-orange{background:rgba(244,163,0,.15);color:var(--gold2);}
+.pct-pill.warn-yellow{background:rgba(255,209,102,.15);color:var(--gold);}
 
 .bracket-week{margin-bottom:22px;}
 .bracket-week h3{font-size:14px;color:var(--gold2);margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;}
