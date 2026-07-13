@@ -649,7 +649,13 @@ function computeCargaDeOro(weekId, idx) {
 let currentTeamTab = 1;
 const expandedTeams = new Set();
 const expandedMembers = new Set();
+const expandedPosMemberLoads = new Set();
+const posWeekOverrides = new Map();
 let STANDINGS_CACHE = { standings: null, now: null, idx: null };
+
+function isPosWeekOpen(weekKey, defaultOpen) {
+  return posWeekOverrides.has(weekKey) ? posWeekOverrides.get(weekKey) : defaultOpen;
+}
 
 function renderAll() {
   const now = new Date();
@@ -692,7 +698,6 @@ function renderScoringLegend() {
 
 function renderStandings(standings, now, idx) {
   const week3Ended = weekHasEnded(WEEKS[2], now);
-  const week = getCurrentWeek(now);
   let html = `<tr>
     <th></th><th>#</th><th style="text-align:left">Equipo</th><th>PJ</th><th>G</th><th>P</th><th>Pts</th><th>% acum.</th>
   </tr>`;
@@ -708,7 +713,7 @@ function renderStandings(standings, now, idx) {
       <td>${fmtPct(r.pctAvg)}</td>
     </tr>`;
     if (isOpen) {
-      html += `<tr class="team-detail-row"><td colspan="8">${renderTeamMemberDetail(team, idx, week)}</td></tr>`;
+      html += `<tr class="team-detail-row"><td colspan="8">${renderTeamMemberDetail(team, idx, now)}</td></tr>`;
     }
   });
   document.getElementById('standingsTable').innerHTML = html;
@@ -716,45 +721,64 @@ function renderStandings(standings, now, idx) {
   if (!week3Ended) note.textContent = 'Tabla en vivo — fase de grupos aun en curso. Desempate: mayor % de crecimiento acumulado (vs. base interna) en las 3 fechas de fase de grupos.';
 }
 
-function renderTeamMemberDetail(team, idx, week) {
-  const { tableMembers, hiddenStaff } = splitTeamMembers(team, idx, week.id);
-  let rows = '';
-  tableMembers.forEach(m => {
-    const sales = (idx.salesByBrokerWeek[m._key] || {})[week.id] || 0;
-    const set = (idx.ordersByBrokerWeek[m._key] || {})[week.id];
-    const cargas = set ? set.size : 0;
-    const avg = getMemberAvg(m._key);
-    const pct = ((sales - avg) / avg) * 100;
-    const tag = m.staff ? '<span class="badge-staff">Director Técnico</span>' : (m.bonusExempt ? '<span class="badge-exempt">exento bono</span>' : '');
-    const isMemberOpen = expandedMembers.has(m._key);
-    rows += `<tr class="member-row" data-member-toggle="${m._key}">
-      <td class="chevron">${cargas ? (isMemberOpen ? '▾' : '▸') : ''}</td>
-      <td>${m.name}${tag}</td>
-      <td>${fmtMoney(sales)}</td>
-      <td>${fmtMoney(avg)}</td>
-      <td class="${pctColorClass(pct)}">${fmtPct(pct)}</td>
-      <td>${cargas}</td>
-    </tr>`;
-    if (isMemberOpen && cargas) {
-      const loads = getMemberLoads(m._key, week.id);
-      const loadRows = loads.map(l => `<tr><td>${l.orden || '(sin # de orden)'}</td><td>${fmtMoney(l.monto)}</td><td>${l.date.toISOString().slice(0, 10)}</td></tr>`).join('');
-      rows += `<tr class="member-loads-row"><td></td><td colspan="5">
-        <table class="loads-table">
-          <thead><tr><th>Orden</th><th>Monto (fee)</th><th>Fecha</th></tr></thead>
-          <tbody>${loadRows}</tbody>
-        </table>
-      </td></tr>`;
-    }
-  });
-  return `
-    <div class="member-detail-wrap">
-      <div class="member-detail-title">${flagIcon(team.flagCode)}${team.name} — detalle de ${week.label}</div>
+function renderTeamMemberDetail(team, idx, now) {
+  const currentWeek = getCurrentWeek(now);
+  const relevantWeeks = WEEKS.filter(w => weekHasStarted(w, now));
+  const sections = relevantWeeks.map(week => renderTeamWeekSection(team, idx, week, currentWeek)).join('');
+  return `<div class="member-detail-wrap">${sections}</div>`;
+}
+
+function renderTeamWeekSection(team, idx, week, currentWeek) {
+  const weekKey = `${team.id}-${week.id}`;
+  const isOpen = isPosWeekOpen(weekKey, week.id === currentWeek.id);
+  let body = '';
+  if (isOpen) {
+    const { tableMembers, hiddenStaff } = splitTeamMembers(team, idx, week.id);
+    let rows = '';
+    tableMembers.forEach(m => {
+      const sales = (idx.salesByBrokerWeek[m._key] || {})[week.id] || 0;
+      const set = (idx.ordersByBrokerWeek[m._key] || {})[week.id];
+      const cargas = set ? set.size : 0;
+      const avg = getMemberAvg(m._key);
+      const pct = ((sales - avg) / avg) * 100;
+      const tag = m.staff ? '<span class="badge-staff">Director Técnico</span>' : (m.bonusExempt ? '<span class="badge-exempt">exento bono</span>' : '');
+      const memberKey = `${week.id}:${m._key}`;
+      const isMemberOpen = expandedPosMemberLoads.has(memberKey);
+      rows += `<tr class="member-row" data-member-toggle="${memberKey}">
+        <td class="chevron">${cargas ? (isMemberOpen ? '▾' : '▸') : ''}</td>
+        <td>${m.name}${tag}</td>
+        <td>${fmtMoney(sales)}</td>
+        <td>${fmtMoney(avg)}</td>
+        <td class="${pctColorClass(pct)}">${fmtPct(pct)}</td>
+        <td>${cargas}</td>
+      </tr>`;
+      if (isMemberOpen && cargas) {
+        const loads = getMemberLoads(m._key, week.id);
+        const loadRows = loads.map(l => `<tr><td>${l.orden || '(sin # de orden)'}</td><td>${fmtMoney(l.monto)}</td><td>${l.date.toISOString().slice(0, 10)}</td></tr>`).join('');
+        rows += `<tr class="member-loads-row"><td></td><td colspan="5">
+          <table class="loads-table">
+            <thead><tr><th>Orden</th><th>Monto (fee)</th><th>Fecha</th></tr></thead>
+            <tbody>${loadRows}</tbody>
+          </table>
+        </td></tr>`;
+      }
+    });
+    body = `
       ${dtHeaderLine(hiddenStaff)}
       <table class="roster">
         <thead><tr><th></th><th>Integrante</th><th>Ventas semana</th><th>Meta personal semanal</th><th>% vs. meta</th><th>Cargas</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <p class="note">Meta personal semanal = promedio semanal semestral del broker (piso ficticio de ${fmtMoney(INDIVIDUAL_FLOOR)} mientras no se cargue el dato real). Toca una fila con cargas para ver el detalle de cada carga y su monto/fee.</p>
+    `;
+  }
+  return `
+    <div class="week-section">
+      <div class="week-section-header" data-week-toggle="${weekKey}">
+        <span class="chevron">${isOpen ? '▾' : '▸'}</span>
+        <span class="week-section-title">${flagIcon(team.flagCode)}${team.name} — detalle de ${week.label}</span>
+      </div>
+      ${isOpen ? `<div class="week-section-body">${body}</div>` : ''}
     </div>
   `;
 }
@@ -1041,10 +1065,20 @@ document.getElementById('btnRefresh').addEventListener('click', loadAllData);
 
 document.getElementById('standingsTable').addEventListener('click', (e) => {
   const memberToggle = e.target.closest('[data-member-toggle]');
+  const weekToggle = e.target.closest('[data-week-toggle]');
   const teamToggle = e.target.closest('[data-team-toggle]');
   if (memberToggle) {
     const key = memberToggle.dataset.memberToggle;
-    if (expandedMembers.has(key)) expandedMembers.delete(key); else expandedMembers.add(key);
+    if (expandedPosMemberLoads.has(key)) expandedPosMemberLoads.delete(key); else expandedPosMemberLoads.add(key);
+    if (STANDINGS_CACHE.standings) renderStandings(STANDINGS_CACHE.standings, STANDINGS_CACHE.now, STANDINGS_CACHE.idx);
+    return;
+  }
+  if (weekToggle) {
+    const key = weekToggle.dataset.weekToggle;
+    const weekId = parseInt(key.split('-')[1], 10);
+    const currentWeek = getCurrentWeek(STANDINGS_CACHE.now || new Date());
+    const wasOpen = isPosWeekOpen(key, weekId === currentWeek.id);
+    posWeekOverrides.set(key, !wasOpen);
     if (STANDINGS_CACHE.standings) renderStandings(STANDINGS_CACHE.standings, STANDINGS_CACHE.now, STANDINGS_CACHE.idx);
     return;
   }

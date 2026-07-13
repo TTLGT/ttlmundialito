@@ -107,6 +107,13 @@ table.standings tr.team-detail-row:hover td{background:#0b1120;}
 
 .member-detail-wrap{text-align:left;}
 .member-detail-title{font-weight:700;color:var(--gold2);margin-bottom:8px;display:flex;align-items:center;}
+.week-section{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+.week-section:last-child{margin-bottom:0;}
+.week-section-header{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;background:#0f1626;}
+.week-section-header:hover{background:rgba(255,209,102,.06);}
+.week-section-header .chevron{color:var(--gold2);font-size:16px;font-weight:700;width:16px;flex:none;}
+.week-section-title{font-weight:700;color:var(--gold2);display:flex;align-items:center;}
+.week-section-body{padding:12px;border-top:1px solid var(--border);}
 .dt-line{font-size:12.5px;color:var(--muted);margin:0 0 12px;display:flex;align-items:center;gap:6px;}
 .dt-line .badge-staff{margin-left:0;}
 table.roster tr.member-row{cursor:default;}
