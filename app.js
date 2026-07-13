@@ -51,6 +51,35 @@ const INDIVIDUAL_AVG_SEMESTRAL = {
   'JAMES PENA': 291.58,
 };
 
+// Promedio mensual semestral POR BROKER (columna Mensual de la misma fuente).
+// Se usa para la meta mensual individual y el crecimiento acumulado del mes.
+const INDIVIDUAL_AVG_MONTHLY = {
+  // Equipo 1 - Francia
+  'GABE MENDEZ': 4408.17,
+  'EDDUAR GUDIEL': 3533.96,
+  'SAUL ESCOBAR': 2372.92,
+  'JOSE RUANO': 396.33,
+  // Equipo 2 - Argentina
+  'MARY GAYTAN': 4915.58,
+  'ALEXIS GARCIA': 4914.92,
+  'EDVIN PAREDES': 4055.00,
+  'JOE AYALA': 1569.33,
+  'MARV LINARES': 718.50,
+  // Equipo 3 - España
+  'GUS MENDEZ': 17698.92,
+  'OLIVER CENTENO': 7250.00,
+  'BRYAN GUERRA': 1574.33,
+  'CHARLY MOLINA': 802.25,
+  'JUAN DIAZ': 727.50,
+  'PAUL BATS': 231.00,
+  // Equipo 4 - Noruega
+  'JOSE ROMERO': 6259.08,
+  'NERY MENDEZ': 4442.92,
+  'MARVIN GUARCHAJ': 3755.67,
+  'JONATHAN SUAZO': 1175.00,
+  'JAMES PENA': 1166.33,
+};
+
 // Alias de nombres (variantes en el sheet -> nombre oficial en MAYUSCULAS)
 const ALIAS_MAP = {
   'JOSEPH RUANO': 'JOSE RUANO',
@@ -74,7 +103,7 @@ const WEEKS = [
 const TEAMS = [
   {
     id: 1, name: 'Francia', flag: '🇫🇷', flagCode: 'FR', color: 'var(--fr)',
-    baseReal: 2677.85, umbral: 2700,
+    baseReal: 2677.85, umbral: 2700, monthlyGoal: 10711.38,
     members: [
       { name: 'Saul Escobar' },
       { name: 'Andy Taracena' },
@@ -87,7 +116,7 @@ const TEAMS = [
   },
   {
     id: 2, name: 'Argentina', flag: '🇦🇷', flagCode: 'AR', color: 'var(--ar)',
-    baseReal: 4043.33, umbral: 4000,
+    baseReal: 4043.33, umbral: 4000, monthlyGoal: 16173.33,
     members: [
       { name: 'Mary Gaytan' },
       { name: 'Alexis Garcia' },
@@ -100,7 +129,7 @@ const TEAMS = [
   },
   {
     id: 3, name: 'España', flag: '🇪🇸', flagCode: 'ES', color: 'var(--es)',
-    baseReal: 7071.00, umbral: 7000,
+    baseReal: 7071.00, umbral: 7000, monthlyGoal: 28284.00,
     members: [
       { name: 'Gus Mendez' },
       { name: 'Oliver Centeno' },
@@ -113,7 +142,7 @@ const TEAMS = [
   },
   {
     id: 4, name: 'Noruega', flag: '🇳🇴', flagCode: 'NO', color: 'var(--no)',
-    baseReal: 4199.75, umbral: 4200,
+    baseReal: 4199.75, umbral: 4200, monthlyGoal: 16799.00,
     members: [
       { name: 'Marvin Guarchaj' },
       { name: 'Jose Romero' },
@@ -519,19 +548,21 @@ function staffFirst(members) {
 }
 
 // Directores tecnicos (staff) solo aparecen en la tabla de ventas si tuvieron
-// ventas esa semana; de lo contrario se muestran solo en el encabezado del equipo.
-function splitTeamMembers(team, idx, weekId) {
+// ventas en el periodo; de lo contrario se muestran solo en el encabezado del equipo.
+function splitTeamMembersBySales(team, salesFn) {
   const tableMembers = [];
   const hiddenStaff = [];
   team.members.forEach(m => {
     if (m.staff) {
-      const sales = (idx.salesByBrokerWeek[m._key] || {})[weekId] || 0;
-      if (sales > 0) tableMembers.push(m); else hiddenStaff.push(m);
+      if (salesFn(m) > 0) tableMembers.push(m); else hiddenStaff.push(m);
     } else {
       tableMembers.push(m);
     }
   });
   return { tableMembers: staffFirst(tableMembers), hiddenStaff };
+}
+function splitTeamMembers(team, idx, weekId) {
+  return splitTeamMembersBySales(team, m => (idx.salesByBrokerWeek[m._key] || {})[weekId] || 0);
 }
 
 function dtHeaderLine(hiddenStaff) {
@@ -616,6 +647,21 @@ function getMemberAvg(memberKey) {
   return INDIVIDUAL_AVG_SEMESTRAL[memberKey] || INDIVIDUAL_FLOOR;
 }
 
+function getMemberMonthlyGoal(memberKey) {
+  return INDIVIDUAL_AVG_MONTHLY[memberKey] || (getMemberAvg(memberKey) * 4);
+}
+
+// Ventas acumuladas de un broker/equipo en todas las semanas ya iniciadas
+// (para la meta y el crecimiento mensual, no solo el de la semana en curso).
+function cumulativeMemberSales(idx, memberKey, now) {
+  return WEEKS.filter(w => weekHasStarted(w, now))
+    .reduce((sum, w) => sum + ((idx.salesByBrokerWeek[memberKey] || {})[w.id] || 0), 0);
+}
+function cumulativeTeamSales(idx, teamId, now) {
+  return WEEKS.filter(w => weekHasStarted(w, now))
+    .reduce((sum, w) => sum + (idx.teamSalesByWeek[teamId][w.id] || 0), 0);
+}
+
 function computeCamionDeOro(weekId, idx) {
   const rows = [];
   TEAMS.forEach(team => {
@@ -649,9 +695,11 @@ function computeCargaDeOro(weekId, idx) {
 let currentTeamTab = 1;
 const expandedTeams = new Set();
 const expandedMembers = new Set();
+const teamDetailWeekOverrides = new Map();
 const expandedPosMemberLoads = new Set();
 const posWeekOverrides = new Map();
 const expandedPrevWeekMatchups = new Set();
+const expandedPrevWeekAwards = new Set();
 let STANDINGS_CACHE = { standings: null, now: null, idx: null };
 
 function isPosWeekOpen(weekKey, defaultOpen) {
@@ -982,73 +1030,192 @@ function renderTeamSelect() {
   });
 }
 
+function isTeamDetailWeekOpen(weekKey, defaultOpen) {
+  return teamDetailWeekOverrides.has(weekKey) ? teamDetailWeekOverrides.get(weekKey) : defaultOpen;
+}
+
 function renderTeamDetail(teamId, idx, now) {
   const team = teamById(teamId);
-  const week = getCurrentWeek(now);
-  const bonusOk = teamBonusAchieved(team, week.id, idx.salesByBrokerWeek);
-  const teamSales = idx.teamSalesByWeek[teamId][week.id] || 0;
-
-  const { tableMembers, hiddenStaff } = splitTeamMembers(team, idx, week.id);
-  let rows = '';
-  tableMembers.forEach(m => {
-    const sales = (idx.salesByBrokerWeek[m._key] || {})[week.id] || 0;
-    const set = (idx.ordersByBrokerWeek[m._key] || {})[week.id];
-    const cargas = set ? set.size : 0;
-    const aporte = teamSales !== 0 ? (sales / teamSales) * 100 : 0;
-    const tag = m.staff ? '<span class="badge-staff">Director Técnico</span>' : (m.bonusExempt ? '<span class="badge-exempt">exento bono</span>' : '');
-    const isMemberOpen = expandedMembers.has(m._key);
-    rows += `<tr class="member-row" data-member-toggle="${m._key}">
-      <td class="chevron">${cargas ? (isMemberOpen ? '▾' : '▸') : ''}</td>
-      <td>${m.name}${tag}</td>
-      <td>${fmtMoney(sales)}</td>
-      <td>${cargas}</td>
-      <td>${aporte.toFixed(1)}%</td>
-    </tr>`;
-    if (isMemberOpen && cargas) {
-      const loads = getMemberLoads(m._key, week.id);
-      const loadRows = loads.map(l => `<tr><td>${l.orden || '(sin # de orden)'}</td><td>${fmtMoney(l.monto)}</td><td>${l.date.toISOString().slice(0, 10)}</td></tr>`).join('');
-      rows += `<tr class="member-loads-row"><td></td><td colspan="4">
-        <table class="loads-table">
-          <thead><tr><th>Orden</th><th>Monto (fee)</th><th>Fecha</th></tr></thead>
-          <tbody>${loadRows}</tbody>
-        </table>
-      </td></tr>`;
-    }
-  });
+  const currentWeek = getCurrentWeek(now);
+  const relevantWeeks = WEEKS.filter(w => weekHasStarted(w, now));
+  const monthlySummary = renderTeamMonthlySummary(team, idx, now);
+  const sections = relevantWeeks.map(week => renderTeamDetailWeekSection(team, idx, week, currentWeek)).join('');
 
   document.getElementById('teamDetail').innerHTML = `
-    <h3 style="margin-top:0;">${flagIcon(team.flagCode)}${team.name} — ${week.label}</h3>
-    ${dtHeaderLine(hiddenStaff)}
-    <p class="note">Ventas del equipo esta semana: <strong>${fmtMoney(teamSales)}</strong> · Base real de referencia: ${fmtMoney(team.baseReal)}</p>
-    <table class="roster">
-      <thead><tr><th></th><th>Integrante</th><th>Ventas semana</th><th>Cargas (ordenes unicas)</th><th>Aporte al equipo</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div class="bonus-banner ${bonusOk ? 'bonus-yes' : 'bonus-no'}">
-      ${bonusOk ? '✅ Bono "todos vendieron" cumplido (+1 punto)' : '❌ Bono "todos vendieron" no cumplido esta semana'}
+    <h3 style="margin-top:0;">${flagIcon(team.flagCode)}${team.name}</h3>
+    ${monthlySummary}
+    <div class="member-detail-wrap">${sections}</div>
+  `;
+}
+
+function renderTeamMonthlySummary(team, idx, now) {
+  const teamCumSales = cumulativeTeamSales(idx, team.id, now);
+  const teamPct = ((teamCumSales - team.monthlyGoal) / team.monthlyGoal) * 100;
+  const { tableMembers, hiddenStaff } = splitTeamMembersBySales(team, m => cumulativeMemberSales(idx, m._key, now));
+
+  const rows = tableMembers.map(m => {
+    const sales = cumulativeMemberSales(idx, m._key, now);
+    const goal = getMemberMonthlyGoal(m._key);
+    const pct = ((sales - goal) / goal) * 100;
+    const tag = m.staff ? '<span class="badge-staff">Director Técnico</span>' : (m.bonusExempt ? '<span class="badge-exempt">exento bono</span>' : '');
+    return `<tr>
+      <td>${m.name}${tag}</td>
+      <td>${fmtMoney(sales)}</td>
+      <td>${fmtMoney(goal)}</td>
+      <td class="${pctColorClass(pct)}">${fmtPct(pct)}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="card" style="margin-bottom:14px;">
+      <h4 style="margin:0 0 8px;color:var(--gold2);">📅 Resumen del mes (acumulado)</h4>
+      ${dtHeaderLine(hiddenStaff)}
+      <p class="note">Ventas del equipo este mes: <strong>${fmtMoney(teamCumSales)}</strong> · Meta mensual del equipo: ${fmtMoney(team.monthlyGoal)} · <span class="${pctColorClass(teamPct)}">${fmtPct(teamPct)}</span></p>
+      <table class="roster">
+        <thead><tr><th>Integrante</th><th>Ventas del mes</th><th>Meta mensual</th><th>% crecimiento</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
     </div>
   `;
 }
 
-function renderAwards(idx, now) {
-  const week = getCurrentWeek(now);
-  document.getElementById('weekAwardLabel').textContent = week.label + ` (${week.start} al ${week.end})`;
+function renderTeamDetailWeekSection(team, idx, week, currentWeek) {
+  const weekKey = `${team.id}-${week.id}`;
+  const isOpen = isTeamDetailWeekOpen(weekKey, week.id === currentWeek.id);
+  let body = '';
+  if (isOpen) {
+    const bonusOk = teamBonusAchieved(team, week.id, idx.salesByBrokerWeek);
+    const teamSales = idx.teamSalesByWeek[team.id][week.id] || 0;
+    const teamPct = ((teamSales - team.baseReal) / team.baseReal) * 100;
+    const { tableMembers, hiddenStaff } = splitTeamMembers(team, idx, week.id);
+    let rows = '';
+    tableMembers.forEach(m => {
+      const sales = (idx.salesByBrokerWeek[m._key] || {})[week.id] || 0;
+      const set = (idx.ordersByBrokerWeek[m._key] || {})[week.id];
+      const cargas = set ? set.size : 0;
+      const aporte = teamSales !== 0 ? (sales / teamSales) * 100 : 0;
+      const goal = getMemberAvg(m._key);
+      const pct = ((sales - goal) / goal) * 100;
+      const tag = m.staff ? '<span class="badge-staff">Director Técnico</span>' : (m.bonusExempt ? '<span class="badge-exempt">exento bono</span>' : '');
+      const memberKey = `${week.id}:${m._key}`;
+      const isMemberOpen = expandedMembers.has(memberKey);
+      rows += `<tr class="member-row" data-member-toggle="${memberKey}">
+        <td class="chevron">${cargas ? (isMemberOpen ? '▾' : '▸') : ''}</td>
+        <td>${m.name}${tag}</td>
+        <td>${fmtMoney(sales)}</td>
+        <td>${fmtMoney(goal)}</td>
+        <td class="${pctColorClass(pct)}">${fmtPct(pct)}</td>
+        <td>${cargas}</td>
+        <td>${aporte.toFixed(1)}%</td>
+      </tr>`;
+      if (isMemberOpen && cargas) {
+        const loads = getMemberLoads(m._key, week.id);
+        const loadRows = loads.map(l => `<tr><td>${l.orden || '(sin # de orden)'}</td><td>${fmtMoney(l.monto)}</td><td>${l.date.toISOString().slice(0, 10)}</td></tr>`).join('');
+        rows += `<tr class="member-loads-row"><td></td><td colspan="6">
+          <table class="loads-table">
+            <thead><tr><th>Orden</th><th>Monto (fee)</th><th>Fecha</th></tr></thead>
+            <tbody>${loadRows}</tbody>
+          </table>
+        </td></tr>`;
+      }
+    });
+    body = `
+      ${dtHeaderLine(hiddenStaff)}
+      <p class="note">Ventas del equipo esta semana: <strong>${fmtMoney(teamSales)}</strong> · Meta semanal del equipo: ${fmtMoney(team.baseReal)} · <span class="${pctColorClass(teamPct)}">${fmtPct(teamPct)}</span></p>
+      <table class="roster">
+        <thead><tr><th></th><th>Integrante</th><th>Ventas semana</th><th>Meta semanal</th><th>% crecimiento</th><th>Cargas (ordenes unicas)</th><th>Aporte al equipo</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="bonus-banner ${bonusOk ? 'bonus-yes' : 'bonus-no'}">
+        ${bonusOk ? '✅ Bono "todos vendieron" cumplido (+1 punto)' : '❌ Bono "todos vendieron" no cumplido esta semana'}
+      </div>
+    `;
+  }
+  return `
+    <div class="week-section">
+      <div class="week-section-header" data-teamweek-toggle="${weekKey}">
+        <span class="chevron">${isOpen ? '▾' : '▸'}</span>
+        <span class="week-section-title">${week.label}</span>
+      </div>
+      ${isOpen ? `<div class="week-section-body">${body}</div>` : ''}
+    </div>
+  `;
+}
 
-  const camion = computeCamionDeOro(week.id, idx).slice(0, 10);
-  const carga = computeCargaDeOro(week.id, idx).slice(0, 10);
+function renderAwardListsHtml(weekId, idx) {
+  const camion = computeCamionDeOro(weekId, idx).slice(0, 10);
+  const carga = computeCargaDeOro(weekId, idx).slice(0, 10);
 
-  document.getElementById('camionOroList').innerHTML = camion.map(r => `
+  const camionHtml = camion.map(r => `
     <li>
       <span class="name">${flagIcon(r.teamFlagCode)}${r.name}</span>
       <span class="sub">${fmtMoney(r.sales)}</span>
       <span class="value">${fmtPct(r.pct)}</span>
     </li>`).join('');
 
-  document.getElementById('cargaOroList').innerHTML = carga.map(r => `
+  const cargaHtml = carga.map(r => `
     <li>
       <span class="name">${flagIcon(r.teamFlagCode)}${r.name}</span>
       <span class="value">${r.count} carga${r.count === 1 ? '' : 's'}</span>
     </li>`).join('');
+
+  return { camionHtml, cargaHtml };
+}
+
+function renderAwards(idx, now) {
+  const week = getCurrentWeek(now);
+  document.getElementById('weekAwardLabel').textContent = week.label + ` (${week.start} al ${week.end})`;
+
+  const { camionHtml, cargaHtml } = renderAwardListsHtml(week.id, idx);
+  document.getElementById('camionOroList').innerHTML = camionHtml;
+  document.getElementById('cargaOroList').innerHTML = cargaHtml;
+
+  renderPrevWeeksAwards(idx, now, week);
+}
+
+function renderPrevWeeksAwards(idx, now, currentWeek) {
+  const container = document.getElementById('prevWeeksAwards');
+  const prevWeeks = WEEKS
+    .filter(w => w.id !== currentWeek.id && weekHasStarted(w, now))
+    .sort((a, b) => b.id - a.id);
+
+  if (!prevWeeks.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  let html = '<h3 class="section-title" style="font-size:16px;margin-top:18px;">Semanas anteriores</h3>';
+  prevWeeks.forEach(week => {
+    const key = `prevweekaward-${week.id}`;
+    const isOpen = expandedPrevWeekAwards.has(key);
+    const title = `${week.label} (${week.start} al ${week.end})`;
+    let body = '';
+    if (isOpen) {
+      const { camionHtml, cargaHtml } = renderAwardListsHtml(week.id, idx);
+      body = `<div class="week-section-body">
+        <div class="grid2">
+          <div class="award-card">
+            <div class="award-title"><span class="award-emoji">🚚</span> Golden Wheel — mayor % de crecimiento individual</div>
+            <ol class="award-list">${camionHtml}</ol>
+          </div>
+          <div class="award-card">
+            <div class="award-title"><span class="award-emoji">📦</span> Carga Dorada — más cargas (órdenes únicas)</div>
+            <ol class="award-list">${cargaHtml}</ol>
+          </div>
+        </div>
+      </div>`;
+    }
+    html += `
+      <div class="week-section">
+        <div class="week-section-header" data-prevweekaward-toggle="${key}">
+          <span class="chevron">${isOpen ? '▾' : '▸'}</span>
+          <span class="week-section-title">${title}</span>
+        </div>
+        ${body}
+      </div>
+    `;
+  });
+  container.innerHTML = html;
 }
 
 function renderDebug(groupMatches, idx) {
@@ -1149,13 +1316,33 @@ document.getElementById('prevWeeksMatchups').addEventListener('click', (e) => {
   if (STANDINGS_CACHE.idx) renderCurrentWeek(STANDINGS_CACHE.idx, STANDINGS_CACHE.now);
 });
 
+document.getElementById('prevWeeksAwards').addEventListener('click', (e) => {
+  const toggle = e.target.closest('[data-prevweekaward-toggle]');
+  if (!toggle) return;
+  const key = toggle.dataset.prevweekawardToggle;
+  if (expandedPrevWeekAwards.has(key)) expandedPrevWeekAwards.delete(key); else expandedPrevWeekAwards.add(key);
+  if (STANDINGS_CACHE.idx) renderAwards(STANDINGS_CACHE.idx, STANDINGS_CACHE.now);
+});
+
 document.getElementById('teamDetail').addEventListener('click', (e) => {
+  const weekToggle = e.target.closest('[data-teamweek-toggle]');
   const memberToggle = e.target.closest('[data-member-toggle]');
-  if (!memberToggle) return;
-  const key = memberToggle.dataset.memberToggle;
-  if (expandedMembers.has(key)) expandedMembers.delete(key); else expandedMembers.add(key);
-  const idx = buildWeeklyIndex(ALL_TRANSACTIONS);
-  renderTeamDetail(currentTeamTab, idx, new Date());
+  if (weekToggle) {
+    const key = weekToggle.dataset.teamweekToggle;
+    const weekId = parseInt(key.split('-')[1], 10);
+    const currentWeek = getCurrentWeek(new Date());
+    const wasOpen = isTeamDetailWeekOpen(key, weekId === currentWeek.id);
+    teamDetailWeekOverrides.set(key, !wasOpen);
+    const idx = buildWeeklyIndex(ALL_TRANSACTIONS);
+    renderTeamDetail(currentTeamTab, idx, new Date());
+    return;
+  }
+  if (memberToggle) {
+    const key = memberToggle.dataset.memberToggle;
+    if (expandedMembers.has(key)) expandedMembers.delete(key); else expandedMembers.add(key);
+    const idx = buildWeeklyIndex(ALL_TRANSACTIONS);
+    renderTeamDetail(currentTeamTab, idx, new Date());
+  }
 });
 
 renderScoringLegend();
