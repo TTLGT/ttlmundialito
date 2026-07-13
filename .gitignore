@@ -1,0 +1,4 @@
+# Team member photos are personal data - keep them out of this public repo.
+# See assets/members/README.md for the filenames the app looks for.
+assets/members/*
+!assets/members/README.md

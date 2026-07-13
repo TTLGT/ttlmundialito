@@ -194,6 +194,50 @@ function flagIcon(code, size) {
   return `<span class="${cls}">${FLAG_SVGS[code] || ''}</span>`;
 }
 
+// Convierte "Saul Escobar" -> "saul-escobar" para armar la ruta de la foto
+// en assets/members/. Basta con colocar ahi un archivo con ese nombre
+// (.jpg/.jpeg/.png/.webp); si no existe, se muestran las iniciales.
+function memberSlug(name) {
+  return name.normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function memberInitials(name) {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
+
+const MEMBER_PHOTO_EXTS = ['jpg', 'jpeg', 'png', 'webp'];
+
+function memberAvatarImg(name, frameClass) {
+  const slug = memberSlug(name);
+  const initials = memberInitials(name);
+  const extsJson = JSON.stringify(MEMBER_PHOTO_EXTS).replace(/"/g, '&quot;');
+  return `<div class="${frameClass}">
+    <img src="assets/members/${slug}.${MEMBER_PHOTO_EXTS[0]}" alt="${name}" loading="lazy"
+      data-exts="${extsJson}" data-slug="${slug}" data-try="0"
+      onerror="const el=this,exts=JSON.parse(el.dataset.exts),i=(+el.dataset.try)+1;if(i&lt;exts.length){el.dataset.try=i;el.src='assets/members/'+el.dataset.slug+'.'+exts[i];}else{el.style.display='none';el.nextElementSibling.style.display='flex';}">
+    <div class="member-photo-fallback" style="display:none;">${initials}</div>
+  </div>`;
+}
+
+function memberPhotoImg(name) {
+  return memberAvatarImg(name, 'member-photo-frame');
+}
+
+// Avatar chico para usar junto al nombre en tablas (Posiciones/Equipos).
+function memberNameCell(name, tag) {
+  return `<span class="member-name-cell">${memberAvatarImg(name, 'member-avatar-sm')}<span>${name}</span>${tag || ''}</span>`;
+}
+
+function renderTeamMemberPhotos(team) {
+  return `<div class="member-photos">${team.members.map(m => `
+    <div class="member-photo-item" title="${m.name}">
+      ${memberPhotoImg(m.name)}
+      <div class="member-photo-name">${m.name.split(' ')[0]}</div>
+    </div>`).join('')}</div>`;
+}
+
 /* ============================================================
    UTILIDADES
    ============================================================ */
@@ -801,7 +845,7 @@ function renderTeamWeekSection(team, idx, week, currentWeek) {
       const isMemberOpen = expandedPosMemberLoads.has(memberKey);
       rows += `<tr class="member-row" data-member-toggle="${memberKey}">
         <td class="chevron">${cargas ? (isMemberOpen ? '▾' : '▸') : ''}</td>
-        <td>${m.name}${tag}</td>
+        <td>${memberNameCell(m.name, tag)}</td>
         <td>${fmtMoney(sales)}</td>
         <td>${fmtMoney(avg)}</td>
         <td class="${pctColorClass(pct)}">${fmtPct(pct)}</td>
@@ -959,12 +1003,14 @@ function renderMatchCard(teamA, teamB, m, tag, isFinished) {
         ${flagIcon(teamA.flagCode, 'big')}
         <div class="name">${teamA.name}</div>
         <div>${pctPill(m.pctA)}</div>
+        ${renderTeamMemberPhotos(teamA)}
       </div>
       <div class="match-vs">VS</div>
       <div class="match-team ${m.winner === 'B' ? 'winning' : ''}">
         ${flagIcon(teamB.flagCode, 'big')}
         <div class="name">${teamB.name}</div>
         <div>${pctPill(m.pctB)}</div>
+        ${renderTeamMemberPhotos(teamB)}
       </div>
     </div>
     <div class="progress-wrap">
@@ -1095,7 +1141,7 @@ function renderTeamMonthlySummary(team, idx, now) {
     const pct = ((sales - goal) / goal) * 100;
     const tag = m.staff ? '<span class="badge-staff">Director Técnico</span>' : (m.bonusExempt ? '<span class="badge-exempt">exento bono</span>' : '');
     return `<tr>
-      <td>${m.name}${tag}</td>
+      <td>${memberNameCell(m.name, tag)}</td>
       <td>${fmtMoney(sales)}</td>
       <td>${fmtMoney(goal)}</td>
       <td class="${pctColorClass(pct)}">${fmtPct(pct)}</td>
@@ -1137,7 +1183,7 @@ function renderTeamDetailWeekSection(team, idx, week, currentWeek) {
       const isMemberOpen = expandedMembers.has(memberKey);
       rows += `<tr class="member-row" data-member-toggle="${memberKey}">
         <td class="chevron">${cargas ? (isMemberOpen ? '▾' : '▸') : ''}</td>
-        <td>${m.name}${tag}</td>
+        <td>${memberNameCell(m.name, tag)}</td>
         <td>${fmtMoney(sales)}</td>
         <td>${fmtMoney(goal)}</td>
         <td class="${pctColorClass(pct)}">${fmtPct(pct)}</td>
@@ -1184,14 +1230,14 @@ function renderAwardListsHtml(weekId, idx) {
 
   const camionHtml = camion.map(r => `
     <li>
-      <span class="name">${flagIcon(r.teamFlagCode)}${r.name}</span>
+      <span class="name">${memberAvatarImg(r.name, 'member-avatar-sm')}${flagIcon(r.teamFlagCode)}${r.name}</span>
       <span class="sub">${fmtMoney(r.sales)}</span>
       <span class="value">${fmtPct(r.pct)}</span>
     </li>`).join('');
 
   const cargaHtml = carga.map(r => `
     <li>
-      <span class="name">${flagIcon(r.teamFlagCode)}${r.name}</span>
+      <span class="name">${memberAvatarImg(r.name, 'member-avatar-sm')}${flagIcon(r.teamFlagCode)}${r.name}</span>
       <span class="value">${r.count} carga${r.count === 1 ? '' : 's'}</span>
     </li>`).join('');
 
