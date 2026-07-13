@@ -243,4 +243,10 @@ table.debug-points{width:100%;border-collapse:collapse;font-size:12px;margin-top
 table.debug-points th,table.debug-points td{border:1px solid var(--border);padding:5px 7px;text-align:center;}
 table.debug-points th{background:var(--panel2);color:var(--muted);}
 .note{font-size:11.5px;color:var(--muted);margin-top:6px;}
+.note.team-summary{font-size:16px;color:var(--text);margin-top:8px;margin-bottom:10px;}
+.note.team-summary strong{font-size:17px;color:var(--green);}
+.note.team-summary .pos{color:var(--green);font-weight:700;}
+.note.team-summary .neg{color:var(--red);font-weight:700;}
+.note.team-summary .warn-orange{color:var(--gold2);font-weight:700;}
+.note.team-summary .warn-yellow{color:var(--gold);font-weight:700;}
 footer.foot{text-align:center;color:var(--muted);font-size:11.5px;margin-top:30px;}

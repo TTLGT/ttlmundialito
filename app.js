@@ -1070,7 +1070,7 @@ function renderTeamMonthlySummary(team, idx, now) {
     <div class="card" style="margin-bottom:14px;">
       <h4 style="margin:0 0 8px;color:var(--gold2);">📅 Resumen del mes (acumulado)</h4>
       ${dtHeaderLine(hiddenStaff)}
-      <p class="note">Ventas del equipo este mes: <strong>${fmtMoney(teamCumSales)}</strong> · Meta mensual del equipo: ${fmtMoney(team.monthlyGoal)} · <span class="${pctColorClass(teamPct)}">${fmtPct(teamPct)}</span></p>
+      <p class="note team-summary">Ventas del equipo este mes: <strong>${fmtMoney(teamCumSales)}</strong> · Meta mensual del equipo: ${fmtMoney(team.monthlyGoal)} · <span class="${pctColorClass(teamPct)}">${fmtPct(teamPct)}</span></p>
       <table class="roster">
         <thead><tr><th>Integrante</th><th>Ventas del mes</th><th>Meta mensual</th><th>% crecimiento</th></tr></thead>
         <tbody>${rows}</tbody>
@@ -1121,7 +1121,7 @@ function renderTeamDetailWeekSection(team, idx, week, currentWeek) {
     });
     body = `
       ${dtHeaderLine(hiddenStaff)}
-      <p class="note">Ventas del equipo esta semana: <strong>${fmtMoney(teamSales)}</strong> · Meta semanal del equipo: ${fmtMoney(team.baseReal)} · <span class="${pctColorClass(teamPct)}">${fmtPct(teamPct)}</span></p>
+      <p class="note team-summary">Ventas del equipo esta semana: <strong>${fmtMoney(teamSales)}</strong> · Meta semanal del equipo: ${fmtMoney(team.baseReal)} · <span class="${pctColorClass(teamPct)}">${fmtPct(teamPct)}</span></p>
       <table class="roster">
         <thead><tr><th></th><th>Integrante</th><th>Ventas semana</th><th>Meta semanal</th><th>% crecimiento</th><th>Cargas (ordenes unicas)</th><th>Aporte al equipo</th></tr></thead>
         <tbody>${rows}</tbody>
