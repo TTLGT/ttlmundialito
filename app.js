@@ -651,6 +651,7 @@ const expandedTeams = new Set();
 const expandedMembers = new Set();
 const expandedPosMemberLoads = new Set();
 const posWeekOverrides = new Map();
+const expandedPrevWeekMatchups = new Set();
 let STANDINGS_CACHE = { standings: null, now: null, idx: null };
 
 function isPosWeekOpen(weekKey, defaultOpen) {
@@ -789,30 +790,74 @@ function getMemberLoads(memberKey, weekId) {
     .sort((a, b) => a.date - b.date);
 }
 
-function renderCurrentWeek(idx, now) {
-  const week = getCurrentWeek(now);
-  const container = document.getElementById('currentMatchups');
-  const label = document.getElementById('currentWeekLabel');
+function computeWeekMatchups(week, idx) {
   let pairs = FIXED_MATCHUPS[week.id];
-  let title = `${week.label} (${week.start} al ${week.end})`;
-
   if (!pairs) {
     // semana 4: final + tercer lugar, requiere posiciones tras semana 3
     const groupMatches = computeGroupStageMatches(idx, new Date(WEEKS[2].end + 'T23:59:59Z'));
     const standings = computeStandingsFromMatches(groupMatches);
     const fm = computeFinalsMatchups(standings);
     pairs = [fm.final, fm.third];
-    title += weekHasEnded(WEEKS[2], now) ? ' — definido por posiciones' : ' — proyeccion segun posiciones actuales';
   }
-  label.textContent = title;
+  return pairs;
+}
 
-  container.innerHTML = '';
+function renderMatchupsForWeek(week, pairs, idx) {
+  let html = '';
   pairs.forEach(([aId, bId], i) => {
     const m = computeMatch(aId, bId, week.id, idx);
     const teamA = teamById(aId), teamB = teamById(bId);
     const tagLabel = week.id === 4 ? (i === 0 ? 'GRAN FINAL' : 'TERCER LUGAR') : '';
-    container.innerHTML += renderMatchCard(teamA, teamB, m, tagLabel);
+    html += renderMatchCard(teamA, teamB, m, tagLabel);
   });
+  return html;
+}
+
+function renderCurrentWeek(idx, now) {
+  const week = getCurrentWeek(now);
+  const container = document.getElementById('currentMatchups');
+  const label = document.getElementById('currentWeekLabel');
+  const pairs = computeWeekMatchups(week, idx);
+  let title = `${week.label} (${week.start} al ${week.end})`;
+
+  if (!FIXED_MATCHUPS[week.id]) {
+    title += weekHasEnded(WEEKS[2], now) ? ' — definido por posiciones' : ' — proyeccion segun posiciones actuales';
+  }
+  label.textContent = title;
+
+  container.innerHTML = renderMatchupsForWeek(week, pairs, idx);
+
+  renderPrevWeeksMatchups(idx, now, week);
+}
+
+function renderPrevWeeksMatchups(idx, now, currentWeek) {
+  const container = document.getElementById('prevWeeksMatchups');
+  const prevWeeks = WEEKS
+    .filter(w => w.id !== currentWeek.id && weekHasStarted(w, now))
+    .sort((a, b) => b.id - a.id);
+
+  if (!prevWeeks.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  let html = '<h3 class="section-title" style="font-size:16px;margin-top:18px;">Semanas anteriores</h3>';
+  prevWeeks.forEach(week => {
+    const key = `prevweek-${week.id}`;
+    const isOpen = expandedPrevWeekMatchups.has(key);
+    const title = `${week.label} (${week.start} al ${week.end})`;
+    const pairs = computeWeekMatchups(week, idx);
+    html += `
+      <div class="week-section">
+        <div class="week-section-header" data-prevweek-toggle="${key}">
+          <span class="chevron">${isOpen ? '▾' : '▸'}</span>
+          <span class="week-section-title">${title}</span>
+        </div>
+        ${isOpen ? `<div class="week-section-body">${renderMatchupsForWeek(week, pairs, idx)}</div>` : ''}
+      </div>
+    `;
+  });
+  container.innerHTML = html;
 }
 
 function renderMatchCard(teamA, teamB, m, tag) {
@@ -1087,6 +1132,14 @@ document.getElementById('standingsTable').addEventListener('click', (e) => {
     if (expandedTeams.has(id)) expandedTeams.delete(id); else expandedTeams.add(id);
     if (STANDINGS_CACHE.standings) renderStandings(STANDINGS_CACHE.standings, STANDINGS_CACHE.now, STANDINGS_CACHE.idx);
   }
+});
+
+document.getElementById('prevWeeksMatchups').addEventListener('click', (e) => {
+  const toggle = e.target.closest('[data-prevweek-toggle]');
+  if (!toggle) return;
+  const key = toggle.dataset.prevweekToggle;
+  if (expandedPrevWeekMatchups.has(key)) expandedPrevWeekMatchups.delete(key); else expandedPrevWeekMatchups.add(key);
+  if (STANDINGS_CACHE.idx) renderCurrentWeek(STANDINGS_CACHE.idx, STANDINGS_CACHE.now);
 });
 
 document.getElementById('teamDetail').addEventListener('click', (e) => {
