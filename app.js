@@ -1245,26 +1245,6 @@ function renderDebug(groupMatches, idx) {
     html += `<strong>Avisos de monto invalido:</strong><div class="debug-list">${DEBUG.nanWarnings.slice(0, 50).map(n => `<div>${n}</div>`).join('')}</div>`;
   }
 
-  html += `<strong>Desglose de puntos por partido (fase de grupos):</strong>
-  <table class="debug-points">
-    <thead><tr><th>Semana</th><th>Equipo A</th><th>Ventas A</th><th>% A</th><th>Equipo B</th><th>Ventas B</th><th>% B</th><th>Duelo</th><th>Base A</th><th>Bono A</th><th>Pts A</th><th>Base B</th><th>Bono B</th><th>Pts B</th></tr></thead>
-    <tbody>
-    ${groupMatches.map(m => {
-      const teamA = teamById(m.teamAId), teamB = teamById(m.teamBId);
-      return `<tr>
-        <td>S${m.weekId}</td>
-        <td>${flagIcon(teamA.flagCode)}${teamA.name}</td><td>${fmtMoney(m.salesA)}</td><td>${fmtPct(m.pctA)}</td>
-        <td>${flagIcon(teamB.flagCode)}${teamB.name}</td><td>${fmtMoney(m.salesB)}</td><td>${fmtPct(m.pctB)}</td>
-        <td>${m.winner === 'draw' ? 'Empate' : (m.winner === 'A' ? teamA.name : teamB.name)}</td>
-        <td>${m.baseA}</td><td>${m.bonusA}</td><td><strong>${m.pointsA}</strong></td>
-        <td>${m.baseB}</td><td>${m.bonusB}</td><td><strong>${m.pointsB}</strong></td>
-      </tr>`;
-    }).join('')}
-    </tbody>
-  </table>
-  <p class="note">Nota: promedios semestrales individuales cargados desde Mundial de Ventas (Ene-Jun 2026). Quien no tenga dato real (staff u otros sin historial) usa el piso ficticio de ${fmtMoney(INDIVIDUAL_FLOOR)} en <code>INDIVIDUAL_AVG_SEMESTRAL</code>.</p>
-  `;
-
   document.getElementById('debugDetails').innerHTML = html;
 }
 
