@@ -909,13 +909,16 @@ function renderBracket(idx, groupMatches, standings, now) {
         html += `<div class="bracket-match"><div class="side">${flagIcon(teamA.flagCode)}${teamA.name}</div><div class="bracket-score">vs</div><div class="side right">${teamB.name}${flagIcon(teamB.flagCode)}</div></div>`;
       });
     } else {
+      const ended = weekHasEnded(week, now);
       FIXED_MATCHUPS[weekId].forEach(([a, b]) => {
         const m = computeMatch(a, b, weekId, idx);
         const teamA = teamById(a), teamB = teamById(b);
+        const badgeA = ended && m.winner === 'A' ? `<span class="pill-winner">WINNER</span><span class="pill-points">${m.pointsA} PTS</span>` : '';
+        const badgeB = ended && m.winner === 'B' ? `<span class="pill-winner">WINNER</span><span class="pill-points">${m.pointsB} PTS</span>` : '';
         html += `<div class="bracket-match decided">
-          <div class="side"><span class="${m.winner === 'A' ? 'winner-name' : ''}">${flagIcon(teamA.flagCode)}${teamA.name}</span></div>
+          <div class="side"><span class="${m.winner === 'A' ? 'winner-name' : ''}">${flagIcon(teamA.flagCode)}${teamA.name}</span>${badgeA}</div>
           <div class="bracket-score"><span class="${pctColorClass(m.pctA)}">${fmtPct(m.pctA)}</span> — <span class="${pctColorClass(m.pctB)}">${fmtPct(m.pctB)}</span></div>
-          <div class="side right"><span class="${m.winner === 'B' ? 'winner-name' : ''}">${teamB.name}${flagIcon(teamB.flagCode)}</span></div>
+          <div class="side right">${badgeB}<span class="${m.winner === 'B' ? 'winner-name' : ''}">${teamB.name}${flagIcon(teamB.flagCode)}</span></div>
         </div>`;
       });
     }
@@ -932,10 +935,13 @@ function renderBracket(idx, groupMatches, standings, now) {
     const teamA = teamById(a), teamB = teamById(b);
     if (weekHasStarted(week4, now)) {
       const m = computeMatch(a, b, 4, idx);
+      const ended = weekHasEnded(week4, now);
+      const badgeA = ended && m.winner === 'A' ? `<span class="pill-winner">WINNER</span><span class="pill-points">${m.pointsA} PTS</span>` : '';
+      const badgeB = ended && m.winner === 'B' ? `<span class="pill-winner">WINNER</span><span class="pill-points">${m.pointsB} PTS</span>` : '';
       html += `<div class="bracket-match decided">
-        <div class="side"><span class="pill-tag">${tag}</span> <span class="${m.winner === 'A' ? 'winner-name' : ''}">${flagIcon(teamA.flagCode)}${teamA.name}</span></div>
+        <div class="side"><span class="pill-tag">${tag}</span> <span class="${m.winner === 'A' ? 'winner-name' : ''}">${flagIcon(teamA.flagCode)}${teamA.name}</span>${badgeA}</div>
         <div class="bracket-score"><span class="${pctColorClass(m.pctA)}">${fmtPct(m.pctA)}</span> — <span class="${pctColorClass(m.pctB)}">${fmtPct(m.pctB)}</span></div>
-        <div class="side right"><span class="${m.winner === 'B' ? 'winner-name' : ''}">${teamB.name}${flagIcon(teamB.flagCode)}</span></div>
+        <div class="side right">${badgeB}<span class="${m.winner === 'B' ? 'winner-name' : ''}">${teamB.name}${flagIcon(teamB.flagCode)}</span></div>
       </div>`;
     } else {
       html += `<div class="bracket-match">

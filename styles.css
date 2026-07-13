@@ -179,6 +179,17 @@ table.loads-table th{color:var(--muted);text-transform:uppercase;font-size:10.5p
 .bracket-score .warn-yellow{color:var(--gold);}
 .bracket-match.decided .winner-name{color:var(--gold);}
 .pill-tag{font-size:10px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:2px 7px;color:var(--muted);margin-left:6px;}
+.pill-winner{
+  font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;
+  background:rgba(255,209,102,.15);border:1px solid var(--gold);border-radius:8px;
+  padding:2px 8px;color:var(--gold);
+  box-shadow:0 0 6px var(--gold),0 0 12px rgba(255,209,102,.5);
+}
+.pill-points{
+  font-size:10px;font-weight:800;letter-spacing:.3px;
+  background:rgba(31,185,104,.15);border:1px solid var(--green);border-radius:8px;
+  padding:2px 8px;color:var(--green);
+}
 
 .team-select{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
 .team-select button{
