@@ -209,14 +209,68 @@ function memberInitials(name) {
 
 const MEMBER_PHOTO_EXTS = ['jpg', 'jpeg', 'png', 'webp'];
 
+// Fotos alojadas en Google Drive (carpeta "Fotos de Empleados", compartida
+// como "cualquiera con el enlace"), usadas por el sitio publicado ya que
+// las fotos locales en assets/members/ estan excluidas del repo publico.
+// slug -> ID de archivo de Drive.
+const MEMBER_PHOTO_DRIVE_IDS = {
+  'ale-noriega': '1aKoPC2sBfKfbdRP5OcUaiJmCg1dKW3sb',
+  'alexis-garcia': '1lS3p0i6CuRs9Qu5AZp6YGexBnpgsSTts',
+  'andy-taracena': '1qCuCZfdqSp8CCbHAr1YprbumjVFEvzHU',
+  'bryan-guerra': '1uWtK4GZ4hwn2kTdh_WJy94YrqAYQyQya',
+  'charly-molina': '1Zytaddo81vKrfFhdnxNVPpDR1oEXwuyM',
+  'david-molina': '1Npf5HkzTFEu5cOvEWrgv5MpA1iHkMX7k',
+  'edduar-gudiel': '1-sVxBTUIMSmaBsqhTmAOZzeCFRUj44MF',
+  'edvin-paredes': '104dCCKYvj6Ce1zxDgt2QlccfKWllnPle',
+  'erwin-solorzano': '1mJYWZb02fDA8kId1YG4eIuRTNpGPCSRg',
+  'gabe-mendez': '11ZhNxMXGQp6Vq2d849yQ3Ub-Is5MzXur',
+  'gus-mendez': '1LpXuk32tThWQTHTCQ9kDxzQydVuOUjcy',
+  'james-pena': '1_cBZxKIsLFi0WsKyzBN8XeFAFOIjYvb6',
+  'joe-ayala': '1TvYc257R5XHJOOkRIieOT3Bdq7GWXDQi',
+  'jonathan-suazo': '1ApOE9e4zG_h-Dx8CngfHgg608xsfN6Lb',
+  'jose-romero': '1-ulnzvZyx-Pm7CmDDt5HxuWQHN0cvTBQ',
+  'jose-ruano': '13-hkGiZQGjcvCPaOaEai_MzpscNV5vrJ',
+  'marv-linares': '1Vs5FoeTdtNEV7e80-fzSKTpkfzWyolOq',
+  'marvin-guarchaj': '1_lHBpiQS4mjwWyJa7emz53pCzoecXGET',
+  'mary-gaytan': '1-OekjTu0XDoKFVWzsYVI2Abl050uOIpG',
+  'nery-mendez': '1LodXlYuEnwnvt2-ehr-BqA7j1G2-6cx_',
+  'oliver-centeno': '1-jhyqehYvgxrA0WBCNt1BcDkhjf6Xd8U',
+  'paul-bats': '1M-Hs16GualM1iF5I_kqZWXD3RfrRQ9Qs',
+  'saul-escobar': '1Hj9MKhnWAarQ-wyhs4rQ_G5XY9qX2WRH',
+  'will-patzan': '1eP0_8CXKBmkdGDHT7UUP0zHapCcQRlRI',
+  // Faltan: isabel-ortiz, juan-diaz, karen-molina (no estan en la carpeta de Drive).
+};
+
+// Maneja el fallback de una foto de integrante: Drive -> extensiones locales
+// en orden -> iniciales. Se define una sola vez en window para no repetir
+// JS inline (propenso a errores) en cada <img>.
+window.memberImgError = function(img) {
+  const exts = MEMBER_PHOTO_EXTS;
+  if (img.dataset.drive === '1') {
+    img.dataset.drive = '0';
+    img.dataset.try = '0';
+    img.src = `assets/members/${img.dataset.slug}.${exts[0]}`;
+    return;
+  }
+  const next = (+img.dataset.try) + 1;
+  if (next < exts.length) {
+    img.dataset.try = String(next);
+    img.src = `assets/members/${img.dataset.slug}.${exts[next]}`;
+  } else {
+    img.style.display = 'none';
+    img.nextElementSibling.style.display = 'flex';
+  }
+};
+
 function memberAvatarImg(name, frameClass) {
   const slug = memberSlug(name);
   const initials = memberInitials(name);
-  const extsJson = JSON.stringify(MEMBER_PHOTO_EXTS).replace(/"/g, '&quot;');
+  const driveId = MEMBER_PHOTO_DRIVE_IDS[slug];
+  const driveSrc = driveId ? `https://lh3.googleusercontent.com/d/${driveId}` : `assets/members/${slug}.${MEMBER_PHOTO_EXTS[0]}`;
   return `<div class="${frameClass}">
-    <img src="assets/members/${slug}.${MEMBER_PHOTO_EXTS[0]}" alt="${name}" loading="lazy"
-      data-exts="${extsJson}" data-slug="${slug}" data-try="0"
-      onerror="const el=this,exts=JSON.parse(el.dataset.exts),i=(+el.dataset.try)+1;if(i&lt;exts.length){el.dataset.try=i;el.src='assets/members/'+el.dataset.slug+'.'+exts[i];}else{el.style.display='none';el.nextElementSibling.style.display='flex';}">
+    <img src="${driveSrc}" alt="${name}" loading="lazy"
+      data-slug="${slug}" data-try="0" data-drive="${driveId ? '1' : '0'}"
+      onerror="memberImgError(this)">
     <div class="member-photo-fallback" style="display:none;">${initials}</div>
   </div>`;
 }
