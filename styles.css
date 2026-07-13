@@ -114,6 +114,10 @@ table.standings tr.team-detail-row:hover td{background:#0b1120;}
 .week-section-header .chevron{color:var(--gold2);font-size:16px;font-weight:700;width:16px;flex:none;}
 .week-section-title{font-weight:700;color:var(--gold2);display:flex;align-items:center;}
 .week-section-body{padding:12px;border-top:1px solid var(--border);}
+.week-points-summary{padding:8px 12px;font-size:12.5px;border-top:1px solid var(--border);background:#0b1120;}
+.week-points-summary.pos{color:var(--green);}
+.week-points-summary.neg{color:var(--red);}
+.week-points-summary strong{color:#e8ecf4;}
 .dt-line{font-size:12.5px;color:var(--muted);margin:0 0 12px;display:flex;align-items:center;gap:6px;}
 .dt-line .badge-staff{margin-left:0;}
 table.roster tr.member-row{cursor:default;}
@@ -127,6 +131,7 @@ table.loads-table{width:100%;border-collapse:collapse;font-size:12px;margin:4px 
 table.loads-table th,table.loads-table td{padding:6px 10px;text-align:left;border-bottom:1px dashed var(--border);}
 table.loads-table th{color:var(--muted);text-transform:uppercase;font-size:10.5px;}
 .flag-icon{display:inline-block;width:20px;height:14px;vertical-align:middle;border-radius:2px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.15);margin-right:6px;}
+.side.right .flag-icon{margin-right:0;margin-left:6px;}
 .flag-icon svg{width:100%;height:100%;display:block;}
 .flag-icon.big{width:46px;height:32px;display:block;margin:0 auto 6px;}
 .pos-badge{
@@ -147,6 +152,7 @@ table.loads-table th{color:var(--muted);text-transform:uppercase;font-size:10.5p
 .progress-wrap{margin-top:10px;}
 .progress-row{margin-bottom:8px;}
 .progress-label{display:flex;justify-content:space-between;font-size:14.5px;font-weight:600;color:#e8ecf4;margin-bottom:4px;}
+.sales-amount{color:var(--green);}
 .bar-bg{background:#0b1120;border:1px solid var(--border);border-radius:8px;height:10px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--blue),var(--gold));transition:width .4s;}
 .bar-fill.flag-fr{background:linear-gradient(90deg,#002654,#8fa8c8,#fff,#f3a8ae,#ED2939);}

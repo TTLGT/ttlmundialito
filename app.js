@@ -611,9 +611,9 @@ function computeGroupStageMatches(idx, now) {
   return matches;
 }
 
-function computeStandingsFromMatches(matches) {
+function computeStandingsFromMatches(matches, idx, now) {
   const table = {};
-  TEAMS.forEach(t => table[t.id] = { teamId: t.id, pj: 0, g: 0, p: 0, pts: 0, pctSum: 0, pctCount: 0 });
+  TEAMS.forEach(t => table[t.id] = { teamId: t.id, pj: 0, g: 0, p: 0, pts: 0 });
   matches.forEach(m => {
     const rowA = table[m.teamAId], rowB = table[m.teamBId];
     rowA.pj++; rowB.pj++;
@@ -621,13 +621,17 @@ function computeStandingsFromMatches(matches) {
     if (m.winner === 'A') { rowA.g++; rowB.p++; }
     else if (m.winner === 'B') { rowB.g++; rowA.p++; }
     else { rowA.g++; rowB.g++; } // empate exacto: "Gano el duelo" para ambos
-    rowA.pctSum += m.pctA; rowA.pctCount++;
-    rowB.pctSum += m.pctB; rowB.pctCount++;
   });
-  const rows = Object.values(table).map(r => ({
-    ...r,
-    pctAvg: r.pctCount ? r.pctSum / r.pctCount : 0,
-  }));
+  // "% crecimiento" ya no es el promedio de los duelos semanales (eso se
+  // distorsiona apenas arranca una semana sin ventas cargadas todavia);
+  // es el avance real del mes: ventas acumuladas del equipo vs. su meta mensual.
+  const rows = Object.values(table).map(r => {
+    const team = teamById(r.teamId);
+    const monthlySales = cumulativeTeamSales(idx, r.teamId, now);
+    const monthlyGoal = team.monthlyGoal;
+    const pctAvg = ((monthlySales - monthlyGoal) / monthlyGoal) * 100;
+    return { ...r, monthlySales, monthlyGoal, pctAvg };
+  });
   rows.sort((x, y) => (y.pts - x.pts) || (y.pctAvg - x.pctAvg));
   return rows;
 }
@@ -710,7 +714,7 @@ function renderAll() {
   const now = new Date();
   const idx = buildWeeklyIndex(ALL_TRANSACTIONS);
   const groupMatches = computeGroupStageMatches(idx, now);
-  const standings = computeStandingsFromMatches(groupMatches);
+  const standings = computeStandingsFromMatches(groupMatches, idx, now);
 
   STANDINGS_CACHE = { standings, now, idx };
   renderStandings(standings, now, idx);
@@ -739,7 +743,7 @@ function renderScoringLegend() {
           <li>Bono equipo: <strong>+1 pt</strong> extra si TODOS los vendedores requeridos del equipo (excluye staff y a quienes están exentos de bono) tuvieron al menos una venta esa semana.</li>
         </ul>
       </li>
-      <li><strong>% ACUM.</strong> — Promedio del % de crecimiento (ventas vs. umbral) del equipo en los duelos jugados. Se usa únicamente como <em>criterio de desempate</em> en la tabla; el campeón del torneo se decide en la Gran Final, no por esta tabla.</li>
+      <li><strong>Meta mensual / Ventas del mes / % Crecimiento mensual</strong> — meta mensual del equipo, cuánto lleva vendido en lo que va del mes (suma de todas las semanas ya iniciadas), y el % de crecimiento de esa venta acumulada contra la meta mensual. Se usa únicamente como <em>criterio de desempate</em> en la tabla; el campeón del torneo se decide en la Gran Final, no por esta tabla.</li>
       <li>${bonusNote}</li>
     </ul>
   `;
@@ -748,7 +752,7 @@ function renderScoringLegend() {
 function renderStandings(standings, now, idx) {
   const week3Ended = weekHasEnded(WEEKS[2], now);
   let html = `<tr>
-    <th></th><th>#</th><th style="text-align:left">Equipo</th><th>PJ</th><th>G</th><th>P</th><th>Pts</th><th>% acum.</th>
+    <th></th><th>#</th><th style="text-align:left">Equipo</th><th>Jugados</th><th>Ganados</th><th>Perdidos</th><th>Puntos</th><th>Meta mensual</th><th>Ventas del mes</th><th>% Crecimiento mensual</th>
   </tr>`;
   standings.forEach((r, i) => {
     const team = teamById(r.teamId);
@@ -759,15 +763,17 @@ function renderStandings(standings, now, idx) {
       <td class="team-cell">${flagIcon(team.flagCode)}${team.name}</td>
       <td>${r.pj}</td><td>${r.g}</td><td>${r.p}</td>
       <td><strong>${r.pts}</strong></td>
-      <td>${fmtPct(r.pctAvg)}</td>
+      <td>${fmtMoney(r.monthlyGoal)}</td>
+      <td class="sales-amount">${fmtMoney(r.monthlySales)}</td>
+      <td class="${pctColorClass(r.pctAvg)}">${fmtPct(r.pctAvg)}</td>
     </tr>`;
     if (isOpen) {
-      html += `<tr class="team-detail-row"><td colspan="8">${renderTeamMemberDetail(team, idx, now)}</td></tr>`;
+      html += `<tr class="team-detail-row"><td colspan="10">${renderTeamMemberDetail(team, idx, now)}</td></tr>`;
     }
   });
   document.getElementById('standingsTable').innerHTML = html;
   const note = document.querySelector('#view-posiciones .card > .note:last-child');
-  if (!week3Ended) note.textContent = 'Tabla en vivo — fase de grupos aun en curso. Desempate: mayor % de crecimiento acumulado (vs. base interna) en las 3 fechas de fase de grupos.';
+  if (!week3Ended) note.textContent = 'Tabla en vivo — fase de grupos aun en curso. Desempate: mayor % de crecimiento mensual (ventas acumuladas del mes vs. meta mensual del equipo).';
 }
 
 function renderTeamMemberDetail(team, idx, now) {
@@ -827,9 +833,38 @@ function renderTeamWeekSection(team, idx, week, currentWeek) {
         <span class="chevron">${isOpen ? '▾' : '▸'}</span>
         <span class="week-section-title">${flagIcon(team.flagCode)}${team.name} — detalle de ${week.label}</span>
       </div>
+      ${renderTeamWeekPointsSummary(team, idx, week)}
       ${isOpen ? `<div class="week-section-body">${body}</div>` : ''}
     </div>
   `;
+}
+
+// Explica en una linea por que un equipo se llevo los puntos que se llevo
+// en una semana puntual: resultado del duelo + si alcanzo su meta + bono equipo.
+function renderTeamWeekPointsSummary(team, idx, week) {
+  const pair = computeWeekMatchups(week, idx).find(p => p.includes(team.id));
+  if (!pair) return '';
+  const m = computeMatch(pair[0], pair[1], week.id, idx);
+  const isA = pair[0] === team.id;
+  const opp = teamById(isA ? pair[1] : pair[0]);
+  const pct = isA ? m.pctA : m.pctB;
+  const oppPct = isA ? m.pctB : m.pctA;
+  const alcanzo = isA ? m.alcanzoA : m.alcanzoB;
+  const base = isA ? m.baseA : m.baseB;
+  const bonus = isA ? m.bonusA : m.bonusB;
+  const total = isA ? m.pointsA : m.pointsB;
+  const won = m.winner === 'draw' || (isA ? m.winner === 'A' : m.winner === 'B');
+
+  const duelText = won
+    ? `Ganaste el duelo vs ${opp.name} (${fmtPct(pct)} vs ${fmtPct(oppPct)})`
+    : `Perdiste el duelo vs ${opp.name} (${fmtPct(pct)} vs ${fmtPct(oppPct)})`;
+  const metaText = alcanzo ? 'y alcanzaste tu meta semanal' : 'sin alcanzar tu meta semanal';
+  const bonusText = bonus ? ` + bono equipo (todos vendieron): <strong>+1 pt</strong>` : '';
+
+  return `<div class="week-points-summary ${won ? 'pos' : 'neg'}">
+    ${duelText} ${metaText} → <strong>${base} ${base === 1 ? 'pt' : 'pts'}</strong>${bonusText}
+    &nbsp;·&nbsp; Total de la semana: <strong>${total} ${total === 1 ? 'pt' : 'pts'}</strong>
+  </div>`;
 }
 
 function getMemberLoads(memberKey, weekId) {
@@ -842,8 +877,9 @@ function computeWeekMatchups(week, idx) {
   let pairs = FIXED_MATCHUPS[week.id];
   if (!pairs) {
     // semana 4: final + tercer lugar, requiere posiciones tras semana 3
-    const groupMatches = computeGroupStageMatches(idx, new Date(WEEKS[2].end + 'T23:59:59Z'));
-    const standings = computeStandingsFromMatches(groupMatches);
+    const asOfWeek3End = new Date(WEEKS[2].end + 'T23:59:59Z');
+    const groupMatches = computeGroupStageMatches(idx, asOfWeek3End);
+    const standings = computeStandingsFromMatches(groupMatches, idx, asOfWeek3End);
     const fm = computeFinalsMatchups(standings);
     pairs = [fm.final, fm.third];
   }
@@ -933,11 +969,11 @@ function renderMatchCard(teamA, teamB, m, tag, isFinished) {
     </div>
     <div class="progress-wrap">
       <div class="progress-row">
-        <div class="progress-label"><span>${teamA.name}: ${fmtMoney(m.salesA)}</span><span>META ${fmtMoney(teamA.baseReal)}</span></div>
+        <div class="progress-label"><span>${teamA.name}: <span class="sales-amount">${fmtMoney(m.salesA)}</span></span><span>Meta ${fmtMoney(teamA.baseReal)}</span></div>
         <div class="bar-bg"><div class="bar-fill flag-${teamA.flagCode.toLowerCase()}" style="width:${progA}%"></div></div>
       </div>
       <div class="progress-row">
-        <div class="progress-label"><span>${teamB.name}: ${fmtMoney(m.salesB)}</span><span>META ${fmtMoney(teamB.baseReal)}</span></div>
+        <div class="progress-label"><span>${teamB.name}: <span class="sales-amount">${fmtMoney(m.salesB)}</span></span><span>Meta ${fmtMoney(teamB.baseReal)}</span></div>
         <div class="bar-bg"><div class="bar-fill flag-${teamB.flagCode.toLowerCase()}" style="width:${progB}%"></div></div>
       </div>
     </div>
@@ -961,8 +997,8 @@ function renderBracket(idx, groupMatches, standings, now) {
       FIXED_MATCHUPS[weekId].forEach(([a, b]) => {
         const m = computeMatch(a, b, weekId, idx);
         const teamA = teamById(a), teamB = teamById(b);
-        const badgeA = ended && m.winner === 'A' ? `<span class="pill-winner">WINNER</span><span class="pill-points">${m.pointsA} PTS</span>` : '';
-        const badgeB = ended && m.winner === 'B' ? `<span class="pill-winner">WINNER</span><span class="pill-points">${m.pointsB} PTS</span>` : '';
+        const badgeA = ended && m.winner === 'A' ? `<span class="pill-winner">GANADOR</span><span class="pill-points">${m.pointsA} PTS</span>` : '';
+        const badgeB = ended && m.winner === 'B' ? `<span class="pill-winner">GANADOR</span><span class="pill-points">${m.pointsB} PTS</span>` : '';
         html += `<div class="bracket-match decided">
           <div class="side"><span class="${m.winner === 'A' ? 'winner-name' : ''}">${flagIcon(teamA.flagCode)}${teamA.name}</span>${badgeA}</div>
           <div class="bracket-score"><span class="${pctColorClass(m.pctA)}">${fmtPct(m.pctA)}</span> — <span class="${pctColorClass(m.pctB)}">${fmtPct(m.pctB)}</span></div>
@@ -984,8 +1020,8 @@ function renderBracket(idx, groupMatches, standings, now) {
     if (weekHasStarted(week4, now)) {
       const m = computeMatch(a, b, 4, idx);
       const ended = weekHasEnded(week4, now);
-      const badgeA = ended && m.winner === 'A' ? `<span class="pill-winner">WINNER</span><span class="pill-points">${m.pointsA} PTS</span>` : '';
-      const badgeB = ended && m.winner === 'B' ? `<span class="pill-winner">WINNER</span><span class="pill-points">${m.pointsB} PTS</span>` : '';
+      const badgeA = ended && m.winner === 'A' ? `<span class="pill-winner">GANADOR</span><span class="pill-points">${m.pointsA} PTS</span>` : '';
+      const badgeB = ended && m.winner === 'B' ? `<span class="pill-winner">GANADOR</span><span class="pill-points">${m.pointsB} PTS</span>` : '';
       html += `<div class="bracket-match decided">
         <div class="side"><span class="pill-tag">${tag}</span> <span class="${m.winner === 'A' ? 'winner-name' : ''}">${flagIcon(teamA.flagCode)}${teamA.name}</span>${badgeA}</div>
         <div class="bracket-score"><span class="${pctColorClass(m.pctA)}">${fmtPct(m.pctA)}</span> — <span class="${pctColorClass(m.pctB)}">${fmtPct(m.pctB)}</span></div>
