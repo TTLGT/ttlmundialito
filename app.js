@@ -802,13 +802,13 @@ function computeWeekMatchups(week, idx) {
   return pairs;
 }
 
-function renderMatchupsForWeek(week, pairs, idx) {
+function renderMatchupsForWeek(week, pairs, idx, isFinished) {
   let html = '';
   pairs.forEach(([aId, bId], i) => {
     const m = computeMatch(aId, bId, week.id, idx);
     const teamA = teamById(aId), teamB = teamById(bId);
     const tagLabel = week.id === 4 ? (i === 0 ? 'GRAN FINAL' : 'TERCER LUGAR') : '';
-    html += renderMatchCard(teamA, teamB, m, tagLabel);
+    html += renderMatchCard(teamA, teamB, m, tagLabel, isFinished);
   });
   return html;
 }
@@ -853,18 +853,19 @@ function renderPrevWeeksMatchups(idx, now, currentWeek) {
           <span class="chevron">${isOpen ? '▾' : '▸'}</span>
           <span class="week-section-title">${title}</span>
         </div>
-        ${isOpen ? `<div class="week-section-body">${renderMatchupsForWeek(week, pairs, idx)}</div>` : ''}
+        ${isOpen ? `<div class="week-section-body">${renderMatchupsForWeek(week, pairs, idx, true)}</div>` : ''}
       </div>
     `;
   });
   container.innerHTML = html;
 }
 
-function renderMatchCard(teamA, teamB, m, tag) {
+function renderMatchCard(teamA, teamB, m, tag, isFinished) {
   const pctPill = (p) => `<span class="pct-pill ${pctColorClass(p)}">${fmtPct(p)}</span>`;
+  const winnerName = m.winner === 'A' ? teamA.name : teamB.name;
   const winnerText = m.winner === 'draw'
     ? 'Empate en el duelo — ambos ganan el duelo'
-    : `${m.winner === 'A' ? teamA.name : teamB.name} va ganando el duelo`;
+    : (isFinished ? `${winnerName.toUpperCase()} GANO EL DUELO` : `${winnerName} va ganando el duelo`);
   const progA = Math.min(100, (m.salesA / teamA.baseReal) * 100);
   const progB = Math.min(100, (m.salesB / teamB.baseReal) * 100);
   return `<div class="match-card">
@@ -884,11 +885,11 @@ function renderMatchCard(teamA, teamB, m, tag) {
     </div>
     <div class="progress-wrap">
       <div class="progress-row">
-        <div class="progress-label"><span>${teamA.name}: ${fmtMoney(m.salesA)}</span><span>meta ${fmtMoney(teamA.baseReal)}</span></div>
+        <div class="progress-label"><span>${teamA.name}: ${fmtMoney(m.salesA)}</span><span>META ${fmtMoney(teamA.baseReal)}</span></div>
         <div class="bar-bg"><div class="bar-fill flag-${teamA.flagCode.toLowerCase()}" style="width:${progA}%"></div></div>
       </div>
       <div class="progress-row">
-        <div class="progress-label"><span>${teamB.name}: ${fmtMoney(m.salesB)}</span><span>meta ${fmtMoney(teamB.baseReal)}</span></div>
+        <div class="progress-label"><span>${teamB.name}: ${fmtMoney(m.salesB)}</span><span>META ${fmtMoney(teamB.baseReal)}</span></div>
         <div class="bar-bg"><div class="bar-fill flag-${teamB.flagCode.toLowerCase()}" style="width:${progB}%"></div></div>
       </div>
     </div>

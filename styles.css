@@ -146,7 +146,7 @@ table.loads-table th{color:var(--muted);text-transform:uppercase;font-size:10.5p
 .winning{color:var(--gold);}
 .progress-wrap{margin-top:10px;}
 .progress-row{margin-bottom:8px;}
-.progress-label{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-bottom:3px;}
+.progress-label{display:flex;justify-content:space-between;font-size:14.5px;font-weight:600;color:#e8ecf4;margin-bottom:4px;}
 .bar-bg{background:#0b1120;border:1px solid var(--border);border-radius:8px;height:10px;overflow:hidden;}
 .bar-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--blue),var(--gold));transition:width .4s;}
 .bar-fill.flag-fr{background:linear-gradient(90deg,#002654,#8fa8c8,#fff,#f3a8ae,#ED2939);}
