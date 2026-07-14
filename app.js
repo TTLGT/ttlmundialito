@@ -225,11 +225,14 @@ const MEMBER_PHOTO_DRIVE_IDS = {
   'erwin-solorzano': '1mJYWZb02fDA8kId1YG4eIuRTNpGPCSRg',
   'gabe-mendez': '11ZhNxMXGQp6Vq2d849yQ3Ub-Is5MzXur',
   'gus-mendez': '1LpXuk32tThWQTHTCQ9kDxzQydVuOUjcy',
+  'isabel-ortiz': '1lfDijd-C0j_Cs7J20oyOiBg0jY0YK8HZ',
   'james-pena': '1_cBZxKIsLFi0WsKyzBN8XeFAFOIjYvb6',
   'joe-ayala': '1TvYc257R5XHJOOkRIieOT3Bdq7GWXDQi',
   'jonathan-suazo': '1ApOE9e4zG_h-Dx8CngfHgg608xsfN6Lb',
   'jose-romero': '1-ulnzvZyx-Pm7CmDDt5HxuWQHN0cvTBQ',
   'jose-ruano': '13-hkGiZQGjcvCPaOaEai_MzpscNV5vrJ',
+  'juan-diaz': '1VCgonoP1wtjK5lDr6zvkTjeeIfad8Kwm',
+  'karen-molina': '1T_4MeyV7koKePz3SEWymR4kwYHiUWVxb',
   'marv-linares': '1Vs5FoeTdtNEV7e80-fzSKTpkfzWyolOq',
   'marvin-guarchaj': '1_lHBpiQS4mjwWyJa7emz53pCzoecXGET',
   'mary-gaytan': '1-OekjTu0XDoKFVWzsYVI2Abl050uOIpG',
@@ -238,7 +241,6 @@ const MEMBER_PHOTO_DRIVE_IDS = {
   'paul-bats': '1M-Hs16GualM1iF5I_kqZWXD3RfrRQ9Qs',
   'saul-escobar': '1Hj9MKhnWAarQ-wyhs4rQ_G5XY9qX2WRH',
   'will-patzan': '1eP0_8CXKBmkdGDHT7UUP0zHapCcQRlRI',
-  // Faltan: isabel-ortiz, juan-diaz, karen-molina (no estan en la carpeta de Drive).
 };
 
 // Maneja el fallback de una foto de integrante: Drive -> extensiones locales
